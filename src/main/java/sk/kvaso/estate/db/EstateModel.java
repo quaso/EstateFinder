@@ -40,4 +40,5 @@ public class EstateModel {
 	
 	@Column
 	private Timestamp TIMESTAMP;
+
 }
