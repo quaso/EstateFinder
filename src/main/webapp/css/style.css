@@ -1,0 +1,12 @@
+@import "general.css";
+
+@import "estateList.css";
+@import "css3-buttons.css";
+
+form input[type="text"] {
+	background-color: #F5BC4D;
+	border-top-color: #9F6100;
+	border-left-color: #9F6100;
+	border-bottom-color: #F4EAB2;
+	border-right-color: #F4EAB2;
+}
