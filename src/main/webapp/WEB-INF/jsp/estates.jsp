@@ -28,7 +28,8 @@
 		</button>
 		<span class="label">Total: ${fn:length(estates)}</span>
 		<p class="time">
-			<fmt:formatDate pattern="dd.MM.yyyy HH:mm:ss" value="${lastScan}" />
+			<fmt:formatDate pattern="dd.MM.yyyy HH:mm:ss" value="${lastScan}"
+				timeZone="Europe/Bratislava" />
 		</p>
 		<div class="clearer"></div>
 
@@ -43,7 +44,7 @@
 
 				<div class="advertisement-head ">
 					<h2>
-						<a href="${estate.URL}" target="_blank" title="${estate.ID}">"${estate.TITLE}</a>
+						<a href="${estate.URL}" target="_blank" title="${estate.ID}">${estate.TITLE}</a>
 					</h2>
 				</div>
 
@@ -66,7 +67,8 @@
 					</p>
 					<p class="time">
 						<span class="tlste"> <fmt:formatDate
-								pattern="dd.MM.yyyy HH:mm" value="${estate.TIMESTAMP}" />
+								pattern="dd.MM.yyyy HH:mm" value="${estate.TIMESTAMP}"
+								timeZone="Europe/Bratislava" />
 						</span> <input name="selected" type="checkbox" value="${estate.ID}" />
 					</p>
 				</div>

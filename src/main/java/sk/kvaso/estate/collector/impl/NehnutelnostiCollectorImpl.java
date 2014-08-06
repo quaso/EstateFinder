@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -33,7 +34,7 @@ public class NehnutelnostiCollectorImpl implements ICollector {
 	}
 
 	@Override
-	public Set<Estate> parse(final Document doc) throws Exception {
+	public Set<Estate> parse(final Document doc, final Date date) throws Exception {
 		final Set<Estate> result = new HashSet<>();
 
 		final Elements inzeratElements = doc.getElementsByClass("inzerat");
@@ -59,7 +60,7 @@ public class NehnutelnostiCollectorImpl implements ICollector {
 
 			estate.setPRICE(getPrice(inzerat.getElementsByClass("cena").first().getElementsByTag("span").first()
 					.ownText()));
-			estate.setTIMESTAMP(new Date());
+			estate.setTIMESTAMP(date);
 
 			result.add(estate);
 		}
@@ -68,11 +69,13 @@ public class NehnutelnostiCollectorImpl implements ICollector {
 	}
 
 	private String getStreet(final String str) {
+		String result = "";
 		final int i = str.indexOf(",");
 		if (i > 0) {
-			return str.substring(0, i).replaceAll("(Ružinov)", "").replaceAll("Ružinov", "").trim();
+			result = str.substring(0, i).replaceAll("(Ružinov)", "").replaceAll("Ružinov", "").trim();
+			result = StringUtils.substringBefore(result, "(").trim();
 		}
-		return "";
+		return result;
 	}
 
 	private int getArea(final String str) {

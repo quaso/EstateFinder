@@ -2,6 +2,7 @@ package sk.kvaso.estate.collector.impl;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Date;
 import java.util.Set;
 
 import org.jsoup.nodes.Document;
@@ -14,6 +15,6 @@ public interface ICollector {
 
 	public URL getURL(final int page) throws MalformedURLException;
 
-	public Set<Estate> parse(final Document doc) throws Exception;
+	public Set<Estate> parse(final Document doc, final Date date) throws Exception;
 
 }

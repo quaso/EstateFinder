@@ -1,13 +1,7 @@
 body {
-    width: 806px;
+    width: 1000px;
     background-position: top center;
     margin-left: auto;
     margin-right: auto;
     font-family: tahoma, sans-serif;
-}
-
-
-h1, h2, h3, h4 {
-    margin-left: 38px;
-    margin-right: 38px;
 }

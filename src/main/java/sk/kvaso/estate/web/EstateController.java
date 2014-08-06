@@ -72,7 +72,14 @@ public class EstateController {
 
 			@Override
 			public int compare(final Estate e1, final Estate e2) {
-				return e1.getTIMESTAMP().compareTo(e2.getTIMESTAMP());
+				int result = e2.getTIMESTAMP().compareTo(e1.getTIMESTAMP());
+				if (result == 0) {
+					result = e1.getSTREET().compareTo(e2.getSTREET());
+					if (result == 0) {
+						result = Long.compare(e1.getID(), e2.getID());
+					}
+				}
+				return result;
 			}
 		});
 
