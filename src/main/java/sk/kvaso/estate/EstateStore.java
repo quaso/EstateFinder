@@ -2,7 +2,7 @@ package sk.kvaso.estate;
 
 import java.util.LinkedList;
 
-import sk.kvaso.estate.model.Estate;
+import sk.kvaso.estate.db.Estate;
 
 public class EstateStore extends LinkedList<Estate> {
 

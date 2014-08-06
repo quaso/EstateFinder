@@ -6,7 +6,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,19 +24,21 @@ import org.springframework.web.servlet.view.RedirectView;
 
 import sk.kvaso.estate.EstateStore;
 import sk.kvaso.estate.collector.DataCollector;
-import sk.kvaso.estate.model.Estate;
-
-import com.google.appengine.api.taskqueue.QueueFactory;
-import com.google.appengine.api.taskqueue.TaskOptions;
+import sk.kvaso.estate.db.DatabaseUtils;
+import sk.kvaso.estate.db.Estate;
 
 @Controller
 public class EstateController {
+	private static final Logger log = Logger.getLogger(EstateController.class.getName());
 
 	@Autowired
 	private EstateStore store;
 
 	@Autowired
 	private DataCollector collector;
+
+	@Autowired
+	private DatabaseUtils databaseUtils;
 
 	@RequestMapping(value = "/{estateId}", method = RequestMethod.GET)
 	public ModelAndView getEstates(@PathVariable final long estateId) {
@@ -93,30 +95,40 @@ public class EstateController {
 						}
 					}
 				}
+				this.databaseUtils.save();
 				break;
 			case "CollectNew" :
-				collect();
+				collect(true);
 				break;
 		}
 
 		return new RedirectView("/");
 	}
 
-	@RequestMapping(value = "/collect", method = RequestMethod.GET)
-	public RedirectView collectGet() {
-		collect();
-		return new RedirectView("/");
-	}
-
 	@RequestMapping(value = "/collectCron", method = {RequestMethod.GET, RequestMethod.POST})
 	@ResponseStatus(value = HttpStatus.OK)
 	public void collectCron() {
-		collect();
-		QueueFactory.getDefaultQueue().add(
-				TaskOptions.Builder.withUrl("/collectCron").countdownMillis(TimeUnit.MINUTES.toMillis(10)));
+		collect(false);
+		resumeCollecting();
 	}
 
-	private void collect() {
-		this.collector.collect();
+	@RequestMapping(value = "/pause", method = {RequestMethod.GET, RequestMethod.POST})
+	@ResponseStatus(value = HttpStatus.OK)
+	public void pauseCollecting() {
+		this.collector.setPaused(true);
+	}
+
+	@RequestMapping(value = "/resume", method = {RequestMethod.GET, RequestMethod.POST})
+	@ResponseStatus(value = HttpStatus.OK)
+	public void resumeCollecting() {
+		this.collector.setPaused(false);
+	}
+
+	private void collect(final boolean force) {
+		try {
+			this.collector.collect(force);
+		} catch (final Throwable t) {
+			log.severe("Error collecting data: " + t.getMessage());
+		}
 	}
 }

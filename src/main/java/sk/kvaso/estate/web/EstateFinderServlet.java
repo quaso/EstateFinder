@@ -5,6 +5,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.beans.BeansException;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -33,7 +34,15 @@ public class EstateFinderServlet extends HttpServlet {
 
 		resp.setContentType("text/plain");
 
-		ctx.getBean(DataCollector.class).collect();
+		try {
+			ctx.getBean(DataCollector.class).collect(true);
+		} catch (final BeansException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (final Throwable e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 		final Gson gson = new Gson();
 

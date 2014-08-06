@@ -13,6 +13,6 @@
 
 	<bean id="dataCollector" class="sk.kvaso.estate.collector.DataCollector" />
 	
-	<bean id="databaseUtils" class="sk.kvaso.estate.utils.DatabaseUtils" />
+	<bean id="databaseUtils" class="sk.kvaso.estate.db.DatabaseUtils" />
 
 </beans>

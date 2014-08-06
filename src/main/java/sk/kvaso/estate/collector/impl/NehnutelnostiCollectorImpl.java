@@ -5,16 +5,23 @@ import java.net.URL;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
-import sk.kvaso.estate.model.Estate;
+import sk.kvaso.estate.db.Estate;
 
 @Component
 public class NehnutelnostiCollectorImpl implements ICollector {
+	private static final Logger log = Logger.getLogger(NehnutelnostiCollectorImpl.class.getName());
+
+	@Override
+	public String getName() {
+		return "nehnutelnosti.sk";
+	}
 
 	@Override
 	public URL getURL(final int page) throws MalformedURLException {
@@ -38,7 +45,7 @@ public class NehnutelnostiCollectorImpl implements ICollector {
 			estate.setURL(elementA.attr("href"));
 			estate.setTITLE(elementA.ownText());
 
-			System.out.println(estate.getTITLE());
+			log.fine(estate.getTITLE());
 
 			estate.setTHUMBNAIL(inzerat.getElementsByClass("advertPhoto").first().getElementsByTag("img").first()
 					.attr("data-src"));

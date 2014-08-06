@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import javax.mail.Message;
 import javax.mail.Session;
@@ -20,13 +21,14 @@ import org.springframework.util.CollectionUtils;
 
 import sk.kvaso.estate.EstateStore;
 import sk.kvaso.estate.collector.impl.ICollector;
-import sk.kvaso.estate.model.Estate;
-import sk.kvaso.estate.utils.DatabaseUtils;
+import sk.kvaso.estate.db.DatabaseUtils;
+import sk.kvaso.estate.db.Estate;
 
 import com.google.appengine.api.taskqueue.QueueFactory;
 import com.google.appengine.api.taskqueue.TaskOptions;
 
 public class DataCollector implements InitializingBean {
+	private static final Logger log = Logger.getLogger(DataCollector.class.getName());
 
 	private final Set<ICollector> collectors;
 
@@ -36,6 +38,8 @@ public class DataCollector implements InitializingBean {
 	@Autowired
 	private DatabaseUtils databaseUtils;
 
+	private boolean paused = false;
+
 	@Autowired
 	public DataCollector(final Set<ICollector> collectors) {
 		this.collectors = collectors;
@@ -43,12 +47,14 @@ public class DataCollector implements InitializingBean {
 
 	private Date lastScan;
 
-	public void collect() {
+	public synchronized void collect(final boolean force) throws Throwable {
+		if (this.paused && !force) {
+			log.info("Collectting is paused");
+			return;
+		}
 		if (this.store.isEmpty()) {
 			this.databaseUtils.load();
 		}
-
-		final boolean storeWasEmpty = this.store.isEmpty();
 
 		int newEstatesAdded = 0;
 
@@ -56,9 +62,10 @@ public class DataCollector implements InitializingBean {
 		//		System.setProperty("http.proxyPort", "3128");
 
 		for (final ICollector collector : this.collectors) {
+			log.info("Using [" + collector.getName() + "]");
 			try {
 				for (int page = 1;; page++) {
-					System.out.println("---- page " + page + " ----");
+					log.info("---- page " + page + " ----");
 					final Document doc = Jsoup.parse(collector.getURL(page), 10000);
 					final Set<Estate> estatesInPage = collector.parse(doc);
 					if (CollectionUtils.isEmpty(estatesInPage)) {
@@ -74,12 +81,11 @@ public class DataCollector implements InitializingBean {
 
 		this.databaseUtils.save();
 
-		//		if (!storeWasEmpty &&
 		if (newEstatesAdded > 0) {
 			sendMail(newEstatesAdded);
 		}
 
-		System.out.println("done");
+		log.info("done");
 	}
 
 	private int mergeEstates(final Set<Estate> newEstates) {
@@ -131,14 +137,14 @@ public class DataCollector implements InitializingBean {
 
 		final Message msg = new MimeMessage(session);
 		try {
-			msg.setFrom(new InternetAddress("admin@quasoestatefinder.com", "Quaso Estate Finder Admin"));
+			msg.setFrom(new InternetAddress("martinkvasnicka@gmail.com", "Quaso Estate Finder Admin"));
 			msg.addRecipient(Message.RecipientType.TO,
 					new InternetAddress("martinkvasnicka@gmail.com", "Martin Kvasnicka"));
 			msg.setSubject("New estates found: " + newEstatesAdded);
 			msg.setText("http://quasoestatefinder.appspot.com/");
 			Transport.send(msg);
 		} catch (final Exception ex) {
-			ex.printStackTrace();
+			log.warning("Cannot send mail " + ex.getMessage());
 		}
 	}
 
@@ -150,5 +156,13 @@ public class DataCollector implements InitializingBean {
 
 	public final Date getLastScan() {
 		return this.lastScan;
+	}
+
+	public final boolean isPaused() {
+		return this.paused;
+	}
+
+	public final void setPaused(final boolean paused) {
+		this.paused = paused;
 	}
 }

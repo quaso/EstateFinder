@@ -1,4 +1,4 @@
-package sk.kvaso.estate.model;
+package sk.kvaso.estate.db;
 
 
 public class Picture extends Data {

@@ -3,7 +3,7 @@
 <%@taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt"%>
 <%@taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="sk.kvaso.estate.model.*"%>
+<%@page import="sk.kvaso.estate.db.*"%>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <jsp:useBean id="estates" type="java.util.List<Estate>" scope="request" />

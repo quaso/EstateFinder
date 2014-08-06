@@ -3,6 +3,6 @@
   <cron>
     <url>/collectCron</url>
     <description>Collect new estates</description>
-    <schedule>every 1 minutes</schedule>
+    <schedule>every 10 minutes</schedule>
   </cron>
 </cronentries>

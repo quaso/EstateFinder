@@ -6,9 +6,11 @@ import java.util.Set;
 
 import org.jsoup.nodes.Document;
 
-import sk.kvaso.estate.model.Estate;
+import sk.kvaso.estate.db.Estate;
 
 public interface ICollector {
+
+	public String getName();
 
 	public URL getURL(final int page) throws MalformedURLException;
 
