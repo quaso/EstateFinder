@@ -3,18 +3,12 @@ package sk.kvaso.estate.collector;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-
-import javax.mail.Message;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
@@ -27,9 +21,6 @@ import sk.kvaso.estate.EstateStore;
 import sk.kvaso.estate.collector.impl.ICollector;
 import sk.kvaso.estate.db.DatabaseUtils;
 import sk.kvaso.estate.db.Estate;
-
-import com.google.appengine.api.taskqueue.QueueFactory;
-import com.google.appengine.api.taskqueue.TaskOptions;
 
 public class DataCollector implements InitializingBean {
 	private static final Logger log = Logger.getLogger(DataCollector.class.getName());
@@ -56,11 +47,14 @@ public class DataCollector implements InitializingBean {
 			log.info("Collectting is paused");
 			return;
 		}
-		if (this.store.isEmpty()) {
-			this.databaseUtils.load();
-		}
+		//		if (this.store.isEmpty()) {
+		//			this.databaseUtils.load();
+		//		}
 
 		final boolean wasEmpty = this.store.isEmpty();
+		if (wasEmpty) {
+			log.info("Store is empty");
+		}
 
 		//		System.setProperty("http.proxyHost", "localhost");
 		//		System.setProperty("http.proxyPort", "3128");
@@ -72,7 +66,7 @@ public class DataCollector implements InitializingBean {
 		for (final ICollector collector : this.collectors) {
 			log.info("Using [" + collector.getName() + "]");
 			try {
-				for (int page = 1;; page++) {
+				for (int page = 1; page < 2; page++) {
 					if (!wasEmpty && page > 2) {
 						break;
 					}
@@ -107,20 +101,24 @@ public class DataCollector implements InitializingBean {
 			}
 		}
 
-		final int newEstatesCount = mergeEstates(this.store, detectedEstates, true);
+		log.info("Detected " + detectedEstates.size() + " estates");
+
+		final Map<String, String> newEstatesCount = mergeEstates(this.store, detectedEstates, true);
+
+		log.info("Total " + this.store.size() + " estates");
 
 		this.databaseUtils.save();
 
-		if (!wasEmpty && newEstatesCount > 0) {
+		if (!wasEmpty && newEstatesCount.size() > 0) {
 			sendMail(newEstatesCount);
 		}
 
 		log.info("done");
 	}
 
-	private int mergeEstates(final Collection<Estate> allEstates, final Collection<Estate> newEstates,
+	private Map<String, String> mergeEstates(final Collection<Estate> allEstates, final Collection<Estate> newEstates,
 			final boolean setId) {
-		int newEstatesAdded = 0;
+		final Map<String, String> result = new HashMap<>();
 
 		for (final Estate newEstate : newEstates) {
 			boolean isSame = false;
@@ -134,7 +132,7 @@ public class DataCollector implements InitializingBean {
 				}
 			}
 			if (!isSame) {
-				newEstatesAdded++;
+				result.put(newEstate.getTITLE(), newEstate.getURL());
 				if (setId) {
 					newEstate.setID(allEstates.size() + 1);
 				}
@@ -143,7 +141,7 @@ public class DataCollector implements InitializingBean {
 			}
 		}
 
-		return newEstatesAdded;
+		return result;
 	}
 
 	public boolean isTheSame(final Estate e1, final Estate e2) {
@@ -177,27 +175,37 @@ public class DataCollector implements InitializingBean {
 		return result;
 	}
 
-	private void sendMail(final int newEstatesCount) {
-		final Properties props = new Properties();
-		final Session session = Session.getDefaultInstance(props, null);
-
-		final Message msg = new MimeMessage(session);
-		try {
-			msg.setFrom(new InternetAddress("martinkvasnicka@gmail.com", "Quaso Estate Finder Admin"));
-			msg.addRecipient(Message.RecipientType.TO,
-					new InternetAddress("martinkvasnicka@gmail.com", "Martin Kvasnicka"));
-			msg.setSubject("New estates found: " + newEstatesCount);
-			msg.setText("http://quasoestatefinder.appspot.com/");
-			Transport.send(msg);
-		} catch (final Exception ex) {
-			log.warning("Cannot send mail " + ex.getMessage());
-		}
+	private void sendMail(final Map<String, String> newEstates) {
+		//		final Properties props = new Properties();
+		//		final Session session = Session.getDefaultInstance(props, null);
+		//
+		//		final Message msg = new MimeMessage(session);
+		//		try {
+		//			msg.setFrom(new InternetAddress("martinkvasnicka@gmail.com", "Quaso Estate Finder Admin"));
+		//			msg.addRecipient(Message.RecipientType.TO,
+		//					new InternetAddress("martinkvasnicka@gmail.com", "Martin Kvasnicka"));
+		//			msg.setSubject("New estates found: " + newEstates.size());
+		//			final StringBuffer buff = new StringBuffer();
+		//			for (final Entry<String, String> e : newEstates.entrySet()) {
+		//				buff.append(e.getKey());
+		//				buff.append("\n");
+		//				buff.append(e.getValue());
+		//				buff.append("\n");
+		//				buff.append("-------------------------\n\n");
+		//			}
+		//			buff.append("http://quasoestatefinder.appspot.com/");
+		//
+		//			msg.setText(buff.toString());
+		//			Transport.send(msg);
+		//		} catch (final Exception ex) {
+		//			log.warning("Cannot send mail " + ex.getMessage());
+		//		}
 	}
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		QueueFactory.getDefaultQueue().add(
-				TaskOptions.Builder.withUrl("/collectCron").countdownMillis(TimeUnit.MINUTES.toMillis(1)));
+		//		QueueFactory.getDefaultQueue().add(
+		//				TaskOptions.Builder.withUrl("/collectCron").countdownMillis(TimeUnit.MINUTES.toMillis(1)));
 	}
 
 	public final Date getLastScan() {

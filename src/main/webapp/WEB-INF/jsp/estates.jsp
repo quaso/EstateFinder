@@ -8,29 +8,57 @@
 
 <jsp:useBean id="estates" type="java.util.List<Estate>" scope="request" />
 <jsp:useBean id="lastScan" class="java.util.Date" scope="request" />
-<jstl:url var="cssLink" value="/css/style.css" />
-<jstl:url var="buttonJsLink" value="/scripts/css3-button.js" />
 
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>Zoznam bytov</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<link rel="stylesheet" type="text/css" href="${cssLink}" />
+
+
+<link href="css/bootstrap.min.css" rel="stylesheet" type="text/css">
+	<link href="css/dashboard.css" rel="stylesheet" type="text/css">
 </head>
 <body>
 	<form method="post">
-		<button name="type" type="submit" class="action red" value="Delete">
-			<span class="label">Delete</span>
-		</button>
-		<button name="type" type="submit" class="action blue"
-			value="CollectNew">
-			<span class="label">Collect new</span>
-		</button>
-		<span class="label">Total: ${fn:length(estates)}</span>
-		<p class="time">
-			<fmt:formatDate pattern="dd.MM.yyyy HH:mm:ss" value="${lastScan}"
-				timeZone="Europe/Bratislava" />
-		</p>
+		<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+			<div class="container">
+				<div class="navbar-header">
+					<button data-target=".navbar-collapse" data-toggle="collapse"
+						class="navbar-toggle" type="button">
+						<span class="sr-only">Toggle navigation</span> <span
+							class="icon-bar"></span> <span class="icon-bar"></span> <span
+							class="icon-bar"></span>
+					</button>
+					<a href="#" class="navbar-brand">Estate Finder</a>
+				</div>
+				<div class="navbar-collapse collapse">
+					<ul class="nav navbar-nav">
+						<li><a href="/collect">Collect new</a></li>
+						<li><a href="/delete">Delete</a></li>
+					</ul>
+					<ul class="nav navbar-nav navbar-right">
+						<li><a>Total: <span class="badge">${fn:length(estates)}</span></a></li>
+						<li><a><fmt:formatDate pattern="dd.MM.yyyy HH:mm:ss"
+									value="${lastScan}" timeZone="Europe/Bratislava" /></a></li>
+					</ul>
+				</div>
+				<!--/.nav-collapse -->
+			</div>
+		</div>
+		<!--		
+		<ul class="nav nav-pills">
+			<li><button name="type" type="submit" class="btn btn-info"
+					value="CollectNew">
+					<span class="label">Collect new</span>
+				</button></li>
+			<li><button name="type" type="submit" class="btn btn-danger"
+					value="Delete">
+					<span class="label">Delete</span>
+				</button></li>
+			<li>Total: <span class="badge">${fn:length(estates)}</span></li>
+		</ul>
+		 -->
+		<p class="time"></p>
 		<div class="clearer"></div>
 
 
