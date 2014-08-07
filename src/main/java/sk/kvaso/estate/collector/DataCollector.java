@@ -62,8 +62,6 @@ public class DataCollector implements InitializingBean {
 
 		final boolean wasEmpty = this.store.isEmpty();
 
-		int newEstatesCount = 0;
-
 		//		System.setProperty("http.proxyHost", "localhost");
 		//		System.setProperty("http.proxyPort", "3128");
 
@@ -75,13 +73,16 @@ public class DataCollector implements InitializingBean {
 			log.info("Using [" + collector.getName() + "]");
 			try {
 				for (int page = 1;; page++) {
+					if (!wasEmpty && page > 2) {
+						break;
+					}
 					log.info("---- page " + page + " ----");
 					final Document doc = Jsoup.parse(collector.getURL(page), 10000);
 					final Set<Estate> estatesInPage = collector.parse(doc, this.lastScan);
 					if (CollectionUtils.isEmpty(estatesInPage)) {
 						break;
 					}
-					newEstatesCount += mergeEstates(detectedEstates, estatesInPage, false);
+					mergeEstates(detectedEstates, estatesInPage, false);
 				}
 			} catch (final Exception e) {
 				e.printStackTrace();
@@ -95,9 +96,10 @@ public class DataCollector implements InitializingBean {
 						.replaceAll("A. MRAZA", "Andreja Mráza").replaceAll("A.MRÁZA", "Andreja Mráza")
 						.replaceAll("A. MRÁZA", "Andreja Mráza").replaceAll("A.Mraza", "Andreja Mráza")
 						.replaceAll("A. Mraza", "Andreja Mráza").replaceAll("A.Mráza", "Andreja Mráza")
-						.replaceAll("A. Mráza", "Andreja Mráza");
+						.replaceAll("A. Mráza", "Andreja Mráza").toLowerCase();
 				for (final String street : streets) {
-					if (title.contains(street)) {
+					final String s = street.substring(0, street.length() - 2).toLowerCase();
+					if (title.contains(s)) {
 						e.setSTREET(street);
 						break;
 					}
@@ -105,7 +107,7 @@ public class DataCollector implements InitializingBean {
 			}
 		}
 
-		mergeEstates(this.store, detectedEstates, true);
+		final int newEstatesCount = mergeEstates(this.store, detectedEstates, true);
 
 		this.databaseUtils.save();
 

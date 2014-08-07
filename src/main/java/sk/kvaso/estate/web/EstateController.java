@@ -74,7 +74,9 @@ public class EstateController {
 			public int compare(final Estate e1, final Estate e2) {
 				int result = e2.getTIMESTAMP().compareTo(e1.getTIMESTAMP());
 				if (result == 0) {
-					result = e1.getSTREET().compareTo(e2.getSTREET());
+					if (e1.getSTREET() != null && e2.getSTREET() != null) {
+						result = e1.getSTREET().compareTo(e2.getSTREET());
+					}
 					if (result == 0) {
 						result = Long.compare(e1.getID(), e2.getID());
 					}
