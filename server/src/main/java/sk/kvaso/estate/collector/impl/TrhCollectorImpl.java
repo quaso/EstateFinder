@@ -80,10 +80,10 @@ public class TrhCollectorImpl implements ICollector {
 
 		final int i = str.lastIndexOf(",");
 		if (i > 0) {
-			result = str.substring(i).replaceAll("(Ru≈æinov)", "").replaceAll("Ru≈æinov", "").replaceAll(",", "").trim();
-			if ("A. Mraza".equals(result) || "A. Mr√°za".equals(result) || "A.Mraza".equals(result)
-					|| "A.Mr√°za".equals(result)) {
-				result = "Andreja Mr√°za";
+			result = str.substring(i).replaceAll("(Ruûinov)", "").replaceAll("Ruûinov", "").replaceAll(",", "").trim();
+			if ("A. Mraza".equals(result) || "A. Mr·za".equals(result) || "A.Mraza".equals(result)
+					|| "A.Mr·za".equals(result)) {
+				result = "Andreja Mr·za";
 			}
 			result = StringUtils.substringBefore(result, "(").trim();
 		}

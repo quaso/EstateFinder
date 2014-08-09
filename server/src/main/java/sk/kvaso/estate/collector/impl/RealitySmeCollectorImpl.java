@@ -33,7 +33,7 @@ public class RealitySmeCollectorImpl implements ICollector {
 
 	@Override
 	public Set<Estate> parse(final Document doc, final Date date) throws Exception {
-		if (doc.html().contains("Ľutujeme, nenašli sa žiadne výsledky."))
+		if (doc.html().contains("sledky."))
 		{
 			return null;
 		}
@@ -49,7 +49,7 @@ public class RealitySmeCollectorImpl implements ICollector {
 			estate.setTITLE(elementA.attr("title"));
 			final Element status = elementA.getElementsByClass("estate-status").first();
 			if (status != null) {
-				if ("Predané".equals(status.ownText()) || "Rezervované".equals(status.ownText())) {
+				if (status.ownText().contains("Predan") || status.ownText().contains("Rezervovan")) {
 					continue;
 				}
 			}

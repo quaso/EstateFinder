@@ -69,21 +69,6 @@ public class RealityBazarCollectorImpl implements ICollector {
 		return result;
 	}
 
-	//	private String getStreet(final String str) {
-	//		String result = "";
-	//
-	//		final int i = str.lastIndexOf(",");
-	//		if (i > 0) {
-	//			result = str.substring(i).replaceAll("(Ružinov)", "").replaceAll("Ružinov", "").replaceAll(",", "").trim();
-	//			if ("A. Mraza".equals(result) || "A. Mráza".equals(result) || "A.Mraza".equals(result)
-	//					|| "A.Mráza".equals(result)) {
-	//				result = "Andreja Mráza";
-	//			}
-	//			result = StringUtils.substringBefore(result, "(").trim();
-	//		}
-	//		return result;
-	//	}
-	//
 	private int getArea(final String str) {
 		int max = -1;
 

@@ -17,7 +17,7 @@ import sk.kvaso.estate.db.Estate;
 
 @Component
 public class NehnutelnostiCollectorImpl implements ICollector {
-	private static final Logger log = Logger.getLogger(NehnutelnostiCollectorImpl.class.getName());
+	private static final Logger log = Logger.getLogger(ZoznamRealitCollectorImpl.class.getName());
 
 	@Override
 	public String getName() {
@@ -72,7 +72,7 @@ public class NehnutelnostiCollectorImpl implements ICollector {
 		String result = "";
 		final int i = str.indexOf(",");
 		if (i > 0) {
-			result = str.substring(0, i).replaceAll("(Ru≈æinov)", "").replaceAll("Ru≈æinov", "").trim();
+			result = str.substring(0, i).replaceAll("(Ruûinov)", "").replaceAll("Ruûinov", "").trim();
 			result = StringUtils.substringBefore(result, "(").trim();
 		}
 		return result;
