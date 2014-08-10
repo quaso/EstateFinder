@@ -1,1 +1,4 @@
-var app = angular.module('EstatesFinderApp', []);
+var app = angular.module('EstatesFinderApp', [
+                                              'Estates.Controllers',
+                                            'Estates.Filters', 'ngAnimate'
+                                              ]);

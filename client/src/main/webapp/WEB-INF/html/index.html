@@ -8,9 +8,7 @@
 <link rel="stylesheet" href="resources/css/dashboard.css">
 <link rel="stylesheet" href="resources/css/estateList.css">
 <link rel="icon" type="image/x-icon" href="resources/favicon.ico">
-<script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
-<script
-	src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
 </head>
 <body ng-controller="EstatesController">
 	<!--workaround for error message truncating in Chrome-->
@@ -42,68 +40,73 @@
 			<div class="navbar-collapse collapse">
 				<ul class="nav navbar-nav">
 					<li><a class="btn" ng-click="collectNow()">Collect now</a></li>
-					<li><a class="btn" href="/delete">Delete</a></li>
 				</ul>
 				<ul class="nav navbar-nav navbar-right">
-					<li><a>Total: <span class="badge">{{estates.length}}</span></a></li>
-					<li><a>Last update: {{lastUpdate | date:'dd.MM.yyyy	HH:mm'}} <span ng-if="!lastUpdate">N/A</span>
+					<li><a>Total:
+							<div class="badge">{{estates.length}}</div>
 					</a></li>
+					<li><a><div>Last update: {{lastUpdate |
+								nullDate:'dd.MM.yyyy HH:mm'}}</div></a></li>
 				</ul>
 			</div>
 		</div>
 	</div>
-	<p class="time"></p>
-	<div class="clearer"></div>
-	<table>
-		<tbody>
-			<tr ng-repeat="estate in estates">
-				<td>
-					<div class="inzerat">
-						<div class="photo-border advertisement-photo">
-							<a href="{{estate.url}}" target="_blank"> <img
-								alt="{{estate.title}}" data-src="{{estate.thumbnail}}"
-								src="{{estate.thumbnail}}">
-							</a>
-						</div>
 
-						<div class="inzerat-content">
-							<div class="advertisement-head ">
-								<h2>
-									<a href="{{estate.url}}" target="_blank" title="{{estate.id}}">{{estate.title}}</a>
-								</h2>
-							</div>
-							<div class="locationText bold red">{{estate.street}}</div>
-							<ul class="inzeratList">
-								<li class="inzeratList estate-area s">Plocha: <span
-									class="red">{{estate.area}} m<sup>2</sup>
-								</span>
-								</li>
-								<li ng-repeat="note in estate.notes"
-									class="inzeratList advertisement-condition s">{{note}}</li>
-							</ul>
-							<p class="advertisement-content-p grey">{{estate.short_text}}</p>
-							<div class="advertisement-rightpanel">
-								<p class="cena">
-									<span class="tlste red"> {{estate.price}} &euro;</span>
-								</p>
-								<p class="time">
-									<span class="tlste">{{estate.timestamp |
-										date:'dd.MM.yyyy HH:mm'}} </span> <input name="selected"
-										type="checkbox" value="{{estate.id}}" />
-								</p>
-							</div>
-						</div>
-						<div class="clearer"></div>
+	<div class="container-fluid">
+		<div class="row main show-hide" ng-repeat="estate in estates"
+			ng-show="estate.visible">
+
+			<div class="col-sm-offset-2 col-sm-8">
+				<a href="{{estate.url}}" class="col-sm-3" target="_blank"> <img
+					alt="{{estate.title}}" ng-src="{{estate.thumbnail}}" />
+				</a>
+
+				<div class="container-fluid col-sm-7">
+					<div class="row">
+						<h4 class="col-sm-12 title">
+							<a href="{{estate.url}}" target="_blank" title="{{estate.id}}">{{estate.title}}</a>
+						</h4>
 					</div>
-				</td>
-			</tr>
-		</tbody>
-	</table>
+					<div class="row">
+						<div class="bold red">{{estate.street}}</div>
+					</div>
+					<div class="row">
+						Plocha:
+						<div class="red area">
+							{{estate.area}} m<sup>2</sup>
+						</div>
+					</div>
+					<div class="row" ng-repeat="note in estate.notes">{{note}}</div>
+				</div>
 
+				<div class="col-sm-2">
+					<div class="row">
+						<div class="bold red price alignRight">{{estate.price}}
+							&euro;</div>
+					</div>
+					<div class="row">
+						<div class="alignRight">{{estate.timestamp |
+							date:'dd.MM.yyyy HH:mm'}}</div>
+					</div>
+					<div class="row">
+						<div class="btn glyphicon glyphicon-trash floatRight"
+							ng-click="deleteEstate(estate)"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
 	<script
-		src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.21/angular.min.js"></script>
+		src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+	<script
+		src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.21/angular.js"></script>
+	<script
+		src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.0-beta.17/angular-animate.js"></script>
 	<script src="resources/js/App.js"></script>
 	<script src="resources/js/EstatesController.js"></script>
+	<script src="resources/js/EstatesFilters.js"></script>
 </body>
 
 </html>

@@ -28,8 +28,8 @@ public class Estate extends Data {
 
 	private String THUMBNAIL;
 
-	//	@OneToMany(orphanRemoval = true)
-	//	@JoinColumn(name = "ESTATE_ID", referencedColumnName = "ID")
+	// @OneToMany(orphanRemoval = true)
+	// @JoinColumn(name = "ESTATE_ID", referencedColumnName = "ID")
 	private final Set<Picture> PICTURES = new HashSet<>();
 
 	private Date TIMESTAMP;
