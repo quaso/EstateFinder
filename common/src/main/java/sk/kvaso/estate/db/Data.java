@@ -2,6 +2,8 @@ package sk.kvaso.estate.db;
 
 import java.io.Serializable;
 
+import com.google.appengine.api.datastore.Entity;
+
 @SuppressWarnings("serial")
 public abstract class Data implements Serializable {
 
@@ -11,7 +13,7 @@ public abstract class Data implements Serializable {
 
 	private boolean persisted;
 
-	//	private Entity google_entity;
+	private Entity google_entity;
 
 	public final long getID() {
 		return this.ID;
@@ -37,12 +39,12 @@ public abstract class Data implements Serializable {
 		this.persisted = persisted;
 	}
 
-	//	final Entity getGoogle_entity() {
-	//		return this.google_entity;
-	//	}
-	//
-	//	final void setGoogle_entity(final Entity google_entity) {
-	//		this.google_entity = google_entity;
-	//	}
+	final Entity getGoogle_entity() {
+		return this.google_entity;
+	}
+
+	final void setGoogle_entity(final Entity google_entity) {
+		this.google_entity = google_entity;
+	}
 
 }

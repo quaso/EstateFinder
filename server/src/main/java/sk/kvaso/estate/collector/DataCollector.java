@@ -66,7 +66,7 @@ public class DataCollector implements InitializingBean {
 		for (final ICollector collector : this.collectors) {
 			log.info("Using [" + collector.getName() + "]");
 			try {
-				for (int page = 1; page < 2; page++) {
+				for (int page = 1;; page++) {
 					if (!wasEmpty && page > 2) {
 						break;
 					}
@@ -86,11 +86,11 @@ public class DataCollector implements InitializingBean {
 		final Set<String> streets = getStreets(this.store, detectedEstates);
 		for (final Estate e : detectedEstates) {
 			if (StringUtils.isEmpty(e.getSTREET())) {
-				final String title = e.getTITLE().replaceAll("A.MRAZA", "Andreja Mráza")
-						.replaceAll("A. MRAZA", "Andreja Mráza").replaceAll("A.MRÁZA", "Andreja Mráza")
-						.replaceAll("A. MRÁZA", "Andreja Mráza").replaceAll("A.Mraza", "Andreja Mráza")
-						.replaceAll("A. Mraza", "Andreja Mráza").replaceAll("A.Mráza", "Andreja Mráza")
-						.replaceAll("A. Mráza", "Andreja Mráza").toLowerCase();
+				final String title = e.getTITLE().replaceAll("A.MRAZA", "Andreja MrÃ¡za")
+						.replaceAll("A. MRAZA", "Andreja MrÃ¡za").replaceAll("A.MRÃZA", "Andreja MrÃ¡za")
+						.replaceAll("A. MRÃZA", "Andreja MrÃ¡za").replaceAll("A.Mraza", "Andreja MrÃ¡za")
+						.replaceAll("A. Mraza", "Andreja MrÃ¡za").replaceAll("A.MrÃ¡za", "Andreja MrÃ¡za")
+						.replaceAll("A. MrÃ¡za", "Andreja MrÃ¡za").toLowerCase();
 				for (final String street : streets) {
 					final String s = street.substring(0, street.length() - 2).toLowerCase();
 					if (title.contains(s)) {

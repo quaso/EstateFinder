@@ -72,7 +72,7 @@ public class NehnutelnostiCollectorImpl implements ICollector {
 		String result = "";
 		final int i = str.indexOf(",");
 		if (i > 0) {
-			result = str.substring(0, i).replaceAll("(Ruûinov)", "").replaceAll("Ruûinov", "").trim();
+			result = str.substring(0, i).replaceAll("(Ru≈æinov)", "").replaceAll("Ru≈æinov", "").trim();
 			result = StringUtils.substringBefore(result, "(").trim();
 		}
 		return result;

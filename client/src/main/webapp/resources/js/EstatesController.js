@@ -1,4 +1,5 @@
-var urlBase = 'http://localhost:8080/rest/';
+//var urlBase = 'http://localhost:8080/rest/';
+var urlBase = 'http://quasoestatefinderserver.appspot.com/rest/';
 
 app.controller("EstatesController", function($scope, $http) {
 	function fetchEstates() {

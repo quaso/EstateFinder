@@ -42,6 +42,9 @@ public class TrhCollectorImpl implements ICollector {
 			final Element elementA = inzerat.getElementsByClass("description").first().getElementsByTag("a")
 					.first();
 			estate.setURL(elementA.attr("href"));
+			if (estate.getURL().startsWith("/")) {
+				estate.setURL("http://www.trh.sk" + estate.getURL());
+			}
 			estate.setTITLE(elementA.ownText());
 
 			log.fine(estate.getTITLE());
@@ -56,15 +59,15 @@ public class TrhCollectorImpl implements ICollector {
 			for (int i = 0; i < attributes.children().size(); i++) {
 				final Element child = attributes.child(i);
 				switch (child.ownText()) {
-					case "Plocha:" :
-						estate.setAREA(getArea(attributes.child(i + 1).ownText()));
-						break;
-					case "Poschodie:" :
-						estate.getNOTES().add("Poschodie: " + attributes.child(i + 1).ownText());
-						break;
-					case "Lokalita:" :
-						estate.setSTREET(getStreet(attributes.child(i + 1).ownText()));
-						break;
+				case "Plocha:":
+					estate.setAREA(getArea(attributes.child(i + 1).ownText()));
+					break;
+				case "Poschodie:":
+					estate.getNOTES().add("Poschodie: " + attributes.child(i + 1).ownText());
+					break;
+				case "Lokalita:":
+					estate.setSTREET(getStreet(attributes.child(i + 1).ownText()));
+					break;
 				}
 			}
 			estate.setTIMESTAMP(date);
@@ -80,10 +83,10 @@ public class TrhCollectorImpl implements ICollector {
 
 		final int i = str.lastIndexOf(",");
 		if (i > 0) {
-			result = str.substring(i).replaceAll("(Ruûinov)", "").replaceAll("Ruûinov", "").replaceAll(",", "").trim();
-			if ("A. Mraza".equals(result) || "A. Mr·za".equals(result) || "A.Mraza".equals(result)
-					|| "A.Mr·za".equals(result)) {
-				result = "Andreja Mr·za";
+			result = str.substring(i).replaceAll("(Ru≈æinov)", "").replaceAll("Ru≈æinov", "").replaceAll(",", "").trim();
+			if ("A. Mraza".equals(result) || "A. Mr√°za".equals(result) || "A.Mraza".equals(result)
+					|| "A.Mr√°za".equals(result)) {
+				result = "Andreja Mr√°za";
 			}
 			result = StringUtils.substringBefore(result, "(").trim();
 		}

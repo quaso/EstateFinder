@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <cronentries>
   <cron>
-    <url>/collectCron</url>
+    <url>/rest/collectCron</url>
     <description>Collect new estates</description>
     <schedule>every 15 minutes</schedule>
   </cron>
