@@ -10,6 +10,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,16 +50,21 @@ public class EstateController {
 		return getEstates(response, null);
 	}
 
-	@RequestMapping(value = "/estates/{street}", method = RequestMethod.GET)
+	@RequestMapping(value = "/search/{street}", method = RequestMethod.GET)
 	public @ResponseBody WebResponse getEstates(final HttpServletResponse response,
 			@PathVariable(value = "street") final String street) {
 		setCORSHeaders(response);
 		final WebResponse result = new WebResponse();
 
+		final boolean searchForStreet = !StringUtils.isBlank(street);
+		if (searchForStreet) {
+			log.info("Searching for street '" + street + "'");
+		}
+
 		result.setEstates(new ArrayList<Estate>());
 		for (final Estate e : this.store) {
 			if (e.isVISIBLE()) {
-				if (!StringUtils.isBlank(street)) {
+				if (searchForStreet) {
 					if (!StringUtils.isEmpty(e.getSTREET())
 							&& StringUtils.getJaroWinklerDistance(street, e.getSTREET()) > 0.95) {
 						result.getEstates().add(e);
@@ -87,6 +93,7 @@ public class EstateController {
 		});
 
 		result.setLastUpdate(this.collector.getLastScan());
+		result.setStreets(this.store.getStreets());
 		return result;
 	}
 
@@ -99,6 +106,16 @@ public class EstateController {
 				e.setVISIBLE(false);
 			}
 		}
+	}
+
+	@RequestMapping(value = "/save", method = RequestMethod.GET)
+	public ResponseEntity<String> save(final HttpServletResponse response) {
+		try {
+			this.databaseUtils.save();
+		} catch (final Exception ex) {
+			return new ResponseEntity<String>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		return new ResponseEntity<String>(HttpStatus.OK);
 	}
 
 	@RequestMapping(value = "/deleteAll", method = RequestMethod.GET)

@@ -8,6 +8,7 @@ angular.module('Estates.Controllers', []).controller(
 			function fetchEstates() {
 				$http.get(urlBase + 'estates').success(function(data) {
 					$scope.estates = data.estates;
+					$scope.streets = data.streets;
 					$scope.lastUpdate = data.lastUpdate;
 				}).error(function() {
 					alert('Error retrieving data');
@@ -32,12 +33,20 @@ angular.module('Estates.Controllers', []).controller(
 			};
 
 			$scope.searchForStreet = function() {
-				$http.get(urlBase + 'estates/' + $scope.searchStreet).success(
+				$http.get(urlBase + 'search/' + $scope.searchStreet).success(
 						function(data) {
 							$scope.estates = data.estates;
 							$scope.lastUpdate = data.lastUpdate;
 						}).error(function() {
 					alert('Error searching for data');
+				});
+			};
+
+			$scope.save = function() {
+				$http.get(urlBase + 'save').success(function(data) {
+					alert('Data saved');
+				}).error(function(data, status) {
+					alert('Error saving data (' + status + '): ' + data);
 				});
 			};
 
