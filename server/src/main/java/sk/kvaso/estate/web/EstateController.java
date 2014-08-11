@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -40,19 +41,31 @@ public class EstateController {
 		response.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
 		response.setHeader("Access-Control-Max-Age", "3600");
 		response.setHeader("Access-Control-Allow-Headers", "Content-Type");
-		// response.setHeader("Access-Control-Allow-Headers",
-		// "x-requested-with");
+		response.setHeader("Access-Control-Allow-Headers", "x-requested-with");
 	}
 
 	@RequestMapping(value = "/estates", method = RequestMethod.GET)
 	public @ResponseBody WebResponse getEstates(final HttpServletResponse response) {
+		return getEstates(response, null);
+	}
+
+	@RequestMapping(value = "/estates/{street}", method = RequestMethod.GET)
+	public @ResponseBody WebResponse getEstates(final HttpServletResponse response,
+			@PathVariable(value = "street") final String street) {
 		setCORSHeaders(response);
 		final WebResponse result = new WebResponse();
-		
+
 		result.setEstates(new ArrayList<Estate>());
 		for (final Estate e : this.store) {
 			if (e.isVISIBLE()) {
-				result.getEstates().add(e);
+				if (!StringUtils.isBlank(street)) {
+					if (!StringUtils.isEmpty(e.getSTREET())
+							&& StringUtils.getJaroWinklerDistance(street, e.getSTREET()) > 0.95) {
+						result.getEstates().add(e);
+					}
+				} else {
+					result.getEstates().add(e);
+				}
 			}
 		}
 
@@ -88,6 +101,19 @@ public class EstateController {
 		}
 	}
 
+	@RequestMapping(value = "/deleteAll", method = RequestMethod.GET)
+	@ResponseStatus(value = HttpStatus.OK)
+	public void deleteAll(final HttpServletResponse response) {
+		setCORSHeaders(response);
+		this.databaseUtils.deleteAll();
+	}
+
+	@RequestMapping(value = "/count", method = RequestMethod.GET)
+	public @ResponseBody int count(final HttpServletResponse response) {
+		setCORSHeaders(response);
+		return this.databaseUtils.count();
+	}
+
 	@RequestMapping(value = "/collect", method = RequestMethod.GET)
 	public @ResponseBody WebResponse collectNew(final HttpServletResponse response) {
 		collect(true);
@@ -100,13 +126,13 @@ public class EstateController {
 		collect(false);
 	}
 
-	@RequestMapping(value = "/pause", method = { RequestMethod.GET, RequestMethod.POST })
+	@RequestMapping(value = "/pause", method = {RequestMethod.GET, RequestMethod.POST})
 	@ResponseStatus(value = HttpStatus.OK)
 	public void pauseCollecting() {
 		this.collector.setPaused(true);
 	}
 
-	@RequestMapping(value = "/resume", method = { RequestMethod.GET, RequestMethod.POST })
+	@RequestMapping(value = "/resume", method = {RequestMethod.GET, RequestMethod.POST})
 	@ResponseStatus(value = HttpStatus.OK)
 	public void resumeCollecting() {
 		this.collector.setPaused(false);

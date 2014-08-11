@@ -7,9 +7,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+
+import javax.mail.Message;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
@@ -22,9 +29,6 @@ import sk.kvaso.estate.EstateStore;
 import sk.kvaso.estate.collector.impl.ICollector;
 import sk.kvaso.estate.db.DatabaseUtils;
 import sk.kvaso.estate.db.Estate;
-
-import com.google.appengine.api.taskqueue.QueueFactory;
-import com.google.appengine.api.taskqueue.TaskOptions;
 
 public class DataCollector implements InitializingBean {
 	private static final Logger log = Logger.getLogger(DataCollector.class.getName());
@@ -52,9 +56,12 @@ public class DataCollector implements InitializingBean {
 			return;
 		}
 
-		// if (this.store.isEmpty()) {
-		// this.databaseUtils.load();
-		// }
+		if (this.store.isEmpty()) {
+			log.info("Loading data from database");
+			this.databaseUtils.load();
+		} else {
+			log.info("Found in-memory data: " + this.store.size());
+		}
 
 		final boolean wasEmpty = this.store.isEmpty();
 		if (wasEmpty) {
@@ -181,38 +188,38 @@ public class DataCollector implements InitializingBean {
 	}
 
 	private void sendMail(final Map<String, String> newEstates) {
-		// final Properties props = new Properties();
-		// final Session session = Session.getDefaultInstance(props, null);
-		//
-		// final Message msg = new MimeMessage(session);
-		// try {
-		// msg.setFrom(new InternetAddress("martinkvasnicka@gmail.com",
-		// "Quaso Estate Finder Admin"));
-		// msg.addRecipient(Message.RecipientType.TO,
-		// new InternetAddress("martinkvasnicka@gmail.com",
-		// "Martin Kvasnicka"));
-		// msg.setSubject("New estates found: " + newEstates.size());
-		// final StringBuffer buff = new StringBuffer();
-		// for (final Entry<String, String> e : newEstates.entrySet()) {
-		// buff.append(e.getKey());
-		// buff.append("\n");
-		// buff.append(e.getValue());
-		// buff.append("\n");
-		// buff.append("-------------------------\n\n");
-		// }
-		// buff.append("http://quasoestatefinder.appspot.com/");
-		//
-		// msg.setText(buff.toString());
-		// Transport.send(msg);
-		// } catch (final Exception ex) {
-		// log.warning("Cannot send mail " + ex.getMessage());
-		// }
+		final Properties props = new Properties();
+		final Session session = Session.getDefaultInstance(props, null);
+
+		final Message msg = new MimeMessage(session);
+		try {
+			msg.setFrom(new InternetAddress("martinkvasnicka@gmail.com",
+					"Quaso Estate Finder Admin"));
+			msg.addRecipient(Message.RecipientType.TO,
+					new InternetAddress("martinkvasnicka@gmail.com",
+							"Martin Kvasnicka"));
+			msg.setSubject("New estates found: " + newEstates.size());
+			final StringBuffer buff = new StringBuffer();
+			for (final Entry<String, String> e : newEstates.entrySet()) {
+				buff.append(e.getKey());
+				buff.append("\n");
+				buff.append(e.getValue());
+				buff.append("\n");
+				buff.append("-------------------------\n\n");
+			}
+			buff.append("http://quasoestatefinder.appspot.com/");
+
+			msg.setText(buff.toString());
+			Transport.send(msg);
+		} catch (final Exception ex) {
+			log.warning("Cannot send mail " + ex.getMessage());
+		}
 	}
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		QueueFactory.getDefaultQueue().add(
-				TaskOptions.Builder.withUrl("/collectCron").countdownMillis(TimeUnit.MINUTES.toMillis(1)));
+		//		QueueFactory.getDefaultQueue().add(
+		//				TaskOptions.Builder.withUrl("/rest/collectCron").countdownMillis(TimeUnit.MINUTES.toMillis(1)));
 	}
 
 	public final Date getLastScan() {

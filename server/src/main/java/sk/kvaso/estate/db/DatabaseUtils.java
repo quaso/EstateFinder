@@ -13,94 +13,121 @@ public class DatabaseUtils {
 	private EstateStore store;
 
 	public void save() {
-		// final DatastoreService datastore =
-		// DatastoreServiceFactory.getDatastoreService();
-		// for (final Estate estate : this.store) {
-		// try {
-		// datastore.put(save(estate));
-		// } catch (final OverQuotaException ex) {
-		// estate.setPersisted(false);
-		// estate.setGoogle_entity(null);
-		// log.warning("Cannot store to database: Quota exceeded");
-		// return;
-		// } catch (final Exception ex) {
-		// estate.setPersisted(false);
-		// estate.setGoogle_entity(null);
-		// log.severe("Error storing estate: " + ex.getMessage());
-		// return;
-		// }
-		// }
-		// log.info("Data persisted");
+		//		final DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		//		int storedCount = 0;
+		//		for (final Estate estate : this.store) {
+		//			try {
+		//				if (!estate.isPersisted()) {
+		//					datastore.put(save(estate));
+		//					storedCount++;
+		//				}
+		//			} catch (final OverQuotaException ex) {
+		//				estate.setPersisted(false);
+		//				estate.setGoogle_entity(null);
+		//				log.warning("Cannot store to database: Quota exceeded");
+		//				return;
+		//			} catch (final Exception ex) {
+		//				estate.setPersisted(false);
+		//				estate.setGoogle_entity(null);
+		//				log.severe("Error storing estate: " + ex.getMessage());
+		//				return;
+		//			}
+		//		}
+		//		log.info("Data persisted: " + storedCount);
 	}
 
 	public void load() {
-		// try {
-		// final DatastoreService datastore =
-		// DatastoreServiceFactory.getDatastoreService();
-		// final Query query = new Query("Estate");
-		// final List<Entity> loaded =
-		// datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
+		//		try {
+		//			final DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		//			final Query query = new Query("Estate");
+		//			final List<Entity> loaded = datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
 		//
-		// for (final Entity e : loaded) {
-		// this.store.add(load(e));
-		// }
-		// log.info("Data loaded");
-		// } catch (final OverQuotaException ex) {
-		// log.warning("Cannot read from database: Quota exceeded");
-		// }
+		//			int loadedCount = 0;
+		//			for (final Entity e : loaded) {
+		//				this.store.add(load(e));
+		//				loadedCount++;
+		//			}
+		//			log.info("Data loaded: " + loadedCount);
+		//		} catch (final OverQuotaException ex) {
+		//			log.warning("Cannot read from database: Quota exceeded");
+		//		}
 	}
 
-	// private Entity save(final Estate estate) {
-	// Entity entity = null;
-	// if (estate.getGoogle_entity() != null) {
-	// entity = estate.getGoogle_entity();
-	// } else {
-	// final Key key = KeyFactory.createKey("Estate", estate.getID());
-	// entity = new Entity("Estate", key);
-	// estate.setGoogle_entity(entity);
-	// }
-	// estate.setPersisted(true);
+	public void deleteAll() {
+		//		final DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		//		final Query query = new Query("Estate");
+		//		final List<Entity> loaded = datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
+		//
+		//		final List<Key> keys = new ArrayList<>();
+		//
+		//		for (final Entity e : loaded) {
+		//			keys.add(e.getKey());
+		//		}
+		//
+		//		log.info("Deleting " + keys.size());
+		//
+		//		datastore.delete(keys);
+		//
+		//		log.info("Deleted all");
+	}
+
+	public int count() {
+		return 0;
+		//		final DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		//		final Query query = new Query("Estate");
+		//		final List<Entity> loaded = datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
+		//		log.info("Count is: " + loaded.size());
+		//		return loaded.size();
+	}
+
+	//	private Entity save(final Estate estate) {
+	//		Entity entity = null;
+	//		if (estate.getGoogle_entity() != null) {
+	//			entity = estate.getGoogle_entity();
+	//		} else {
+	//			final Key key = KeyFactory.createKey("Estate", estate.getID());
+	//			entity = new Entity("Estate", key);
+	//			estate.setGoogle_entity(entity);
+	//		}
+	//		estate.setPersisted(true);
 	//
-	// final BeanWrapper beanWrapper =
-	// PropertyAccessorFactory.forBeanPropertyAccess(estate);
-	// final PropertyDescriptor[] propertyDescriptors =
-	// beanWrapper.getPropertyDescriptors();
-	// for (final PropertyDescriptor pd : propertyDescriptors) {
-	// if (!"google_entity".equals(pd.getName()) &&
-	// !Boolean.TRUE.equals(pd.getValue("transient"))) {
-	// try {
-	// final Object value = beanWrapper.getPropertyValue(pd.getName());
-	// if (value != null) {
-	// entity.setProperty(pd.getName(), value);
-	// }
-	// } catch (final Exception ex) {
-	// // ignore
-	// }
-	// }
-	// }
+	//		final BeanWrapper beanWrapper = PropertyAccessorFactory.forBeanPropertyAccess(estate);
+	//		final PropertyDescriptor[] propertyDescriptors = beanWrapper.getPropertyDescriptors();
+	//		for (final PropertyDescriptor pd : propertyDescriptors) {
+	//			if (!"google_entity".equals(pd.getName())) {
+	//				try {
+	//					final Object value = beanWrapper.getPropertyValue(pd.getName());
+	//					if (value != null) {
+	//						entity.setProperty(pd.getName(), value);
+	//					}
+	//				} catch (final Exception ex) {
+	//					// ignore
+	//				}
+	//			}
+	//		}
 	//
-	// return entity;
-	// }
+	//		return entity;
+	//	}
 	//
-	// private Estate load(final Entity entity) {
-	// final Estate estate = new Estate();
+	//	private Estate load(final Entity entity) {
+	//		final Estate estate = new Estate();
 	//
-	// final BeanWrapper beanWrapper =
-	// PropertyAccessorFactory.forBeanPropertyAccess(estate);
+	//		final BeanWrapper beanWrapper =
+	//				PropertyAccessorFactory.forBeanPropertyAccess(estate);
 	//
-	// final Map<String, Object> properties = entity.getProperties();
-	// for (final String propertyName : properties.keySet()) {
-	// if ("google_entity".equals(propertyName)) {
-	// // estate.setGoogle_entity(entity);
-	// } else {
-	// try {
-	// beanWrapper.setPropertyValue(propertyName, properties.get(propertyName));
-	// } catch (final Exception ex) {
-	// // ignore
-	// }
-	// }
-	// }
+	//		final Map<String, Object> properties = entity.getProperties();
+	//		for (final String propertyName : properties.keySet()) {
+	//			if ("google_entity".equals(propertyName)) {
+	//				estate.setGoogle_entity(entity);
+	//			} else {
+	//				try {
+	//					beanWrapper.setPropertyValue(propertyName, properties.get(propertyName));
+	//				} catch (final Exception ex) {
+	//					// ignore
+	//				}
+	//			}
+	//		}
 	//
-	// return estate;
-	// }
+	//		return estate;
+	//	}
 }
