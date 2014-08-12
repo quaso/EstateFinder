@@ -79,7 +79,7 @@ public class ZoznamRealitCollectorImpl implements ICollector {
 	}
 
 	private String getStreet(final String str) {
-		return str.replaceAll("&aacute;", "a");
+		return str.replaceAll("&aacute;", "a").replaceAll("&eacute;", "e");
 	}
 
 	private int getArea(final String str) {

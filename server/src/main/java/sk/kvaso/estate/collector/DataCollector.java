@@ -1,5 +1,6 @@
 package sk.kvaso.estate.collector;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -14,6 +15,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import javax.mail.Message;
 import javax.mail.Session;
@@ -39,6 +41,8 @@ import com.google.appengine.api.taskqueue.TaskOptions;
 
 public class DataCollector implements InitializingBean {
 	private static final Logger log = Logger.getLogger(DataCollector.class.getName());
+
+	private static final Pattern DIACRITIC_PATTERN = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
 
 	private final Set<ICollector> collectors;
 
@@ -75,14 +79,21 @@ public class DataCollector implements InitializingBean {
 			log.info("Store is empty");
 		}
 
-		// System.setProperty("http.proxyHost", "localhost");
-		// System.setProperty("http.proxyPort", "3128");
-
 		this.lastScan = new Date();
 
 		final List<Estate> detectedEstates = Collections.synchronizedList(new ArrayList<Estate>());
+		ThreadFactory threadFactory;
+		try {
+			threadFactory = ThreadManager.currentRequestThreadFactory();
+		} catch (final NullPointerException ex) {
+			threadFactory = new ThreadFactory() {
 
-		final ThreadFactory threadFactory = ThreadManager.currentRequestThreadFactory();
+				@Override
+				public Thread newThread(final Runnable r) {
+					return new Thread(r);
+				}
+			};
+		}
 		final List<Thread> threads = new ArrayList<>();
 
 		for (final ICollector collector : this.collectors) {
@@ -100,6 +111,7 @@ public class DataCollector implements InitializingBean {
 			for (final Thread thread : threads) {
 				if (thread.isAlive()) {
 					finished = false;
+					break;
 				}
 			}
 		} while (!finished);
@@ -107,16 +119,14 @@ public class DataCollector implements InitializingBean {
 		log.info("Cleaning results");
 
 		this.store.setStreets(getStreets(this.store, detectedEstates));
+
+		// guess street name out of title
 		for (final Estate e : detectedEstates) {
-			if (StringUtils.isEmpty(e.getSTREET())) {
-				final String title = e.getTITLE().replaceAll("A.MRAZA", "Andreja Mráza")
-						.replaceAll("A. MRAZA", "Andreja Mráza").replaceAll("A.MRÁZA", "Andreja Mráza")
-						.replaceAll("A. MRÁZA", "Andreja Mráza").replaceAll("A.Mraza", "Andreja Mráza")
-						.replaceAll("A. Mraza", "Andreja Mráza").replaceAll("A.Mráza", "Andreja Mráza")
-						.replaceAll("A. Mráza", "Andreja Mráza").replaceAll("Astrova", "Astrová")
-						.replaceAll("Andreja Mraza", "Andreja Mráza").toLowerCase();
+			if (StringUtils.isEmpty(e.getSTREET()) || e.getSTREET().contains("okolie")
+					|| e.getSTREET().contains("Bratislava")) {
+				final String title = deAccent(fixStreetName(e.getTITLE())).toLowerCase();
 				for (final String street : this.store.getStreets()) {
-					final String s = street.substring(0, street.length() - 2).toLowerCase();
+					final String s = deAccent(street).toLowerCase();
 					if (title.contains(s)) {
 						e.setSTREET(street);
 						break;
@@ -124,6 +134,23 @@ public class DataCollector implements InitializingBean {
 				}
 			}
 		}
+
+		try {
+			// replace street names with diacritics
+			for (final Estate e : detectedEstates) {
+				final String str = deAccent(e.getSTREET());
+				for (final String street : this.store.getStreets()) {
+					if (str.equals(deAccent(street))) {
+						e.setSTREET(street);
+						break;
+					}
+				}
+			}
+		} catch (final Throwable t) {
+			t.printStackTrace();
+		}
+
+		this.store.setStreets(getStreets(this.store, detectedEstates));
 
 		log.info("Detected " + detectedEstates.size() + " estates");
 
@@ -193,24 +220,52 @@ public class DataCollector implements InitializingBean {
 		for (final Collection<Estate> c : estates) {
 			for (final Estate e : c) {
 				if (!StringUtils.isEmpty(e.getSTREET())) {
-					switch (e.getSTREET()) {
-						case "Astrova" :
-							e.setSTREET("Astrová");
-							break;
-
-						case "Andreja Mraza" :
-							e.setSTREET("Andreja Mráza");
-							break;
-					}
 					if ("000".equals(e.getSTREET())) {
 						e.setSTREET(null);
 					} else {
-						result.add(e.getSTREET());
+						final String street = fixStreetName(e.getSTREET());
+
+						final String s2 = deAccent(street);
+						boolean add = true;
+
+						for (final String s : result) {
+							final String s_ = deAccent(s);
+							if (s2.equals(s_)) {
+								if (StringUtils.getJaroWinklerDistance(s2, street) < StringUtils
+										.getJaroWinklerDistance(s2, s)) {
+									result.remove(s);
+								} else {
+									add = false;
+								}
+								break;
+							}
+						}
+
+						if (add) {
+							result.add(street);
+						}
 					}
 				}
 			}
 		}
+
 		return result;
+	}
+
+	private String fixStreetName(final String str) {
+		return str.replaceAll("A.MRAZA", "Andreja Mráza")
+				.replaceAll("A. MRAZA", "Andreja Mráza").replaceAll("A.MRÁZA", "Andreja Mráza")
+				.replaceAll("A. MRÁZA", "Andreja Mráza").replaceAll("A.Mraza", "Andreja Mráza")
+				.replaceAll("A. Mraza", "Andreja Mráza").replaceAll("A.Mráza", "Andreja Mráza")
+				.replaceAll("A. Mráza", "Andreja Mráza");
+	}
+
+	private String deAccent(final String str) {
+		if (str == null) {
+			return "";
+		}
+		final String nfdNormalizedString = Normalizer.normalize(str, Normalizer.Form.NFD);
+		return DIACRITIC_PATTERN.matcher(nfdNormalizedString).replaceAll("");
 	}
 
 	private void sendMail(final Map<String, String> newEstates) {
@@ -244,8 +299,12 @@ public class DataCollector implements InitializingBean {
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		QueueFactory.getDefaultQueue().add(
-				TaskOptions.Builder.withUrl("/rest/collectCron").countdownMillis(TimeUnit.MINUTES.toMillis(1)));
+		try {
+			QueueFactory.getDefaultQueue().add(
+					TaskOptions.Builder.withUrl("/rest/collectCron").countdownMillis(TimeUnit.MINUTES.toMillis(1)));
+		} catch (final NullPointerException ex) {
+
+		}
 	}
 
 	public final Date getLastScan() {

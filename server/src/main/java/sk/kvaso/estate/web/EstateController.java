@@ -52,22 +52,28 @@ public class EstateController {
 
 	@RequestMapping(value = "/search/{street}", method = RequestMethod.GET)
 	public @ResponseBody WebResponse getEstates(final HttpServletResponse response,
-			@PathVariable(value = "street") final String street) {
+			@PathVariable(value = "street") final String streets) {
 		setCORSHeaders(response);
 		final WebResponse result = new WebResponse();
 
-		final boolean searchForStreet = !StringUtils.isBlank(street);
+		final boolean searchForStreet = !StringUtils.isBlank(streets);
+		String[] splittedStreets = null;
 		if (searchForStreet) {
-			log.info("Searching for street '" + street + "'");
+			log.info("Searching for streets '" + streets + "'");
+			splittedStreets = streets.split(",");
 		}
 
 		result.setEstates(new ArrayList<Estate>());
 		for (final Estate e : this.store) {
 			if (e.isVISIBLE()) {
 				if (searchForStreet) {
-					if (!StringUtils.isEmpty(e.getSTREET())
-							&& StringUtils.getJaroWinklerDistance(street, e.getSTREET()) > 0.95) {
-						result.getEstates().add(e);
+					if (!StringUtils.isEmpty(e.getSTREET())) {
+						for (final String street : splittedStreets) {
+							if (StringUtils.getJaroWinklerDistance(street, e.getSTREET()) > 0.95) {
+								result.getEstates().add(e);
+								break;
+							}
+						}
 					}
 				} else {
 					result.getEstates().add(e);
@@ -85,7 +91,7 @@ public class EstateController {
 						result = e1.getSTREET().compareTo(e2.getSTREET());
 					}
 					if (result == 0) {
-						result = Long.compare(e1.getID(), e2.getID());
+						result = e1.getURL().compareTo(e2.getURL());
 					}
 				}
 				return result;

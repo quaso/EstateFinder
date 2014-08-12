@@ -2,26 +2,32 @@ angular.module('Estates.Controllers', []).controller(
 		"EstatesController",
 		function($scope, $http) {
 
-			// var urlBase = 'http://localhost:8080/rest/';
-			var urlBase = 'http://quasoestatefinderserver.appspot.com/rest/';
+//			var urlBase = 'http://localhost:8080/rest/';
+			 var urlBase = 'http://quasoestatefinderserver.appspot.com/rest/';
 
 			function fetchEstates() {
 				$http.get(urlBase + 'estates').success(function(data) {
-					$scope.estates = data.estates;
-					$scope.streets = data.streets;
-					$scope.lastUpdate = data.lastUpdate;
+					handleResults(data);
 				}).error(function() {
 					alert('Error retrieving data');
 				});
 			}
+			;
+
+			function handleResults(data) {
+				$scope.estates = data.estates;
+				$scope.streets = data.streets;
+				$scope.lastUpdate = data.lastUpdate;
+			}
+			;
 
 			$scope.collectNow = function() {
 				$http.get(urlBase + 'collect').success(function(data) {
-					fetchEstates()
+					handleResults(data);
 				}).error(function() {
 					alert('Error collecting new data');
 				});
-			}
+			};
 
 			$scope.deleteEstate = function(estate) {
 				$http.get(urlBase + 'delete/' + estate.id).success(
@@ -33,13 +39,17 @@ angular.module('Estates.Controllers', []).controller(
 			};
 
 			$scope.searchForStreet = function() {
-				$http.get(urlBase + 'search/' + $scope.searchStreet).success(
-						function(data) {
-							$scope.estates = data.estates;
-							$scope.lastUpdate = data.lastUpdate;
-						}).error(function() {
-					alert('Error searching for data');
-				});
+				if (typeof $scope.searchStreet === 'undefined'
+						|| $scope.searchStreet.length === 0) {
+					fetchEstates();
+				} else {
+					$http.get(urlBase + 'search/' + $scope.searchStreet)
+							.success(function(data) {
+								handleResults(data)
+							}).error(function() {
+								alert('Error searching for data');
+							});
+				}
 			};
 
 			$scope.save = function() {
