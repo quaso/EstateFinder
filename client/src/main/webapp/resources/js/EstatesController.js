@@ -4,6 +4,8 @@ angular.module('Estates.Controllers', []).controller(
 
 //			var urlBase = 'http://localhost:8080/rest/';
 			 var urlBase = 'http://quasoestatefinderserver.appspot.com/rest/';
+			
+			var collecting = false;
 
 			function fetchEstates() {
 				$http.get(urlBase + 'estates').success(function(data) {
@@ -12,14 +14,14 @@ angular.module('Estates.Controllers', []).controller(
 					alert('Error retrieving data');
 				});
 			}
-			;
 
 			function handleResults(data) {
 				$scope.estates = data.estates;
 				$scope.streets = data.streets;
 				$scope.lastUpdate = data.lastUpdate;
+				$scope.lastView = data.lastView;
+				$scope.newEstatesCount = data.newEstatesCount;
 			}
-			;
 
 			$scope.collectNow = function() {
 				$http.get(urlBase + 'collect').success(function(data) {
@@ -29,12 +31,12 @@ angular.module('Estates.Controllers', []).controller(
 				});
 			};
 
-			$scope.deleteEstate = function(estate) {
-				$http.get(urlBase + 'delete/' + estate.id).success(
+			$scope.hideEstate = function(estate) {
+				$http.get(urlBase + 'hide/' + estate.id).success(
 						function(data) {
 							estate.visible = false;
 						}).error(function() {
-					alert('Error deleting data');
+					alert('Error hiding data');
 				});
 			};
 
@@ -57,6 +59,14 @@ angular.module('Estates.Controllers', []).controller(
 					alert('Data saved');
 				}).error(function(data, status) {
 					alert('Error saving data (' + status + '): ' + data);
+				});
+			};
+
+			$scope.deleteAll = function() {
+				$http.get(urlBase + 'deleteAll').success(function(data) {
+					alert('All data deleted');
+				}).error(function(data, status) {
+					alert('Error deleting data: ' + data);
 				});
 			};
 

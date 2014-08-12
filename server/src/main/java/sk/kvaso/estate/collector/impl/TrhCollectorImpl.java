@@ -59,15 +59,15 @@ public class TrhCollectorImpl implements ICollector {
 			for (int i = 0; i < attributes.children().size(); i++) {
 				final Element child = attributes.child(i);
 				switch (child.ownText()) {
-				case "Plocha:":
-					estate.setAREA(getArea(attributes.child(i + 1).ownText()));
-					break;
-				case "Poschodie:":
-					estate.getNOTES().add("Poschodie: " + attributes.child(i + 1).ownText());
-					break;
-				case "Lokalita:":
-					estate.setSTREET(getStreet(attributes.child(i + 1).ownText()));
-					break;
+					case "Plocha:" :
+						estate.setAREA(getArea(attributes.child(i + 1).ownText()));
+						break;
+					case "Poschodie:" :
+						estate.getNOTES().add("Poschodie: " + attributes.child(i + 1).ownText());
+						break;
+					case "Lokalita:" :
+						estate.setSTREET(getStreet(attributes.child(i + 1).ownText()));
+						break;
 				}
 			}
 			estate.setTIMESTAMP(date);

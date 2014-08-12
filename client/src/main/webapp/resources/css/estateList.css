@@ -41,8 +41,8 @@ row.main {
 }
 
 .show-hide {
-	-webkit-transition: all linear 0.5s;
-	transition: all linear 0.5s;
+	-webkit-transition: all linear 0.2s;
+	transition: all linear 0.2s;
 }
 
 .show-hide.ng-hide {
@@ -55,9 +55,6 @@ img {
 	max-height: 200px;
 }
 
-.margin-8 {
-	padding-top: 8px !important;
-	padding-bottom: 8px !important;
-	margin-top: 8px !important;
-	margin-bottom: 8px !important;
+.badge-new {
+	background-color: #2ba9e1;
 }

@@ -65,6 +65,8 @@ public class DatabaseUtils {
 			log.info("Data loaded: " + loadedCount);
 		} catch (final OverQuotaException ex) {
 			log.warning("Cannot read from database: Quota exceeded");
+		} catch (final NullPointerException ex) {
+			log.warning("Cannot read from database");
 		}
 	}
 

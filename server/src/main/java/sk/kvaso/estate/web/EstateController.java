@@ -3,8 +3,10 @@ package sk.kvaso.estate.web;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.logging.Logger;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang3.StringUtils;
@@ -37,6 +39,8 @@ public class EstateController {
 	@Autowired
 	private DatabaseUtils databaseUtils;
 
+	private Date lastView = null;
+
 	private void setCORSHeaders(final HttpServletResponse response) {
 		response.setHeader("Access-Control-Allow-Origin", "*");
 		response.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
@@ -46,12 +50,12 @@ public class EstateController {
 	}
 
 	@RequestMapping(value = "/estates", method = RequestMethod.GET)
-	public @ResponseBody WebResponse getEstates(final HttpServletResponse response) {
-		return getEstates(response, null);
+	public @ResponseBody WebResponse getEstates(final HttpServletRequest request, final HttpServletResponse response) {
+		return getEstates(request, response, null);
 	}
 
 	@RequestMapping(value = "/search/{street}", method = RequestMethod.GET)
-	public @ResponseBody WebResponse getEstates(final HttpServletResponse response,
+	public @ResponseBody WebResponse getEstates(final HttpServletRequest request, final HttpServletResponse response,
 			@PathVariable(value = "street") final String streets) {
 		setCORSHeaders(response);
 		final WebResponse result = new WebResponse();
@@ -63,20 +67,29 @@ public class EstateController {
 			splittedStreets = streets.split(",");
 		}
 
+		result.setNewEstatesCount(0);
+
 		result.setEstates(new ArrayList<Estate>());
 		for (final Estate e : this.store) {
 			if (e.isVISIBLE()) {
+				boolean add = false;
 				if (searchForStreet) {
 					if (!StringUtils.isEmpty(e.getSTREET())) {
 						for (final String street : splittedStreets) {
 							if (StringUtils.getJaroWinklerDistance(street, e.getSTREET()) > 0.95) {
-								result.getEstates().add(e);
+								add = true;
 								break;
 							}
 						}
 					}
 				} else {
+					add = true;
+				}
+				if (add) {
 					result.getEstates().add(e);
+					if (this.lastView == null || e.getTIMESTAMP().after(this.lastView)) {
+						result.setNewEstatesCount(result.getNewEstatesCount() + 1);
+					}
 				}
 			}
 		}
@@ -85,11 +98,18 @@ public class EstateController {
 
 			@Override
 			public int compare(final Estate e1, final Estate e2) {
-				int result = e2.getTIMESTAMP().compareTo(e1.getTIMESTAMP());
-				if (result == 0) {
-					if (e1.getSTREET() != null && e2.getSTREET() != null) {
-						result = e1.getSTREET().compareTo(e2.getSTREET());
-					}
+				int result;
+				if (EstateController.this.lastView != null && EstateController.this.lastView.before(e1.getTIMESTAMP())
+						&& EstateController.this.lastView.after(e2.getTIMESTAMP())) {
+					return -1;
+				} else if (EstateController.this.lastView != null
+						&& EstateController.this.lastView.after(e1.getTIMESTAMP())
+						&& EstateController.this.lastView.before(e2.getTIMESTAMP())) {
+					return 1;
+				} else {
+					final String s1 = (e1.getSTREET() != null) ? e1.getSTREET() : "";
+					final String s2 = (e2.getSTREET() != null) ? e2.getSTREET() : "";
+					result = s1.compareTo(s2);
 					if (result == 0) {
 						result = e1.getURL().compareTo(e2.getURL());
 					}
@@ -98,12 +118,16 @@ public class EstateController {
 			}
 		});
 
+		result.setLastView(this.lastView);
+
+		this.lastView = new Date();
+
 		result.setLastUpdate(this.collector.getLastScan());
 		result.setStreets(this.store.getStreets());
 		return result;
 	}
 
-	@RequestMapping(value = "/delete/{id}", method = RequestMethod.GET)
+	@RequestMapping(value = "/hide/{id}", method = RequestMethod.GET)
 	@ResponseStatus(value = HttpStatus.OK)
 	public void deleteEstate(final HttpServletResponse response, @PathVariable("id") final int estateId) {
 		setCORSHeaders(response);
@@ -138,9 +162,9 @@ public class EstateController {
 	}
 
 	@RequestMapping(value = "/collect", method = RequestMethod.GET)
-	public @ResponseBody WebResponse collectNew(final HttpServletResponse response) {
+	public @ResponseBody WebResponse collectNew(final HttpServletRequest request, final HttpServletResponse response) {
 		collect(true);
-		return getEstates(response);
+		return getEstates(request, response);
 	}
 
 	@RequestMapping(value = "/collectCron")
@@ -165,6 +189,7 @@ public class EstateController {
 		try {
 			this.collector.collect(force);
 		} catch (final Throwable t) {
+			t.printStackTrace();
 			log.severe("Error collecting data: " + t.getMessage());
 		}
 	}

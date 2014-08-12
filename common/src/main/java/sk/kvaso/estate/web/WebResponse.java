@@ -16,6 +16,8 @@ public class WebResponse implements Serializable {
 	private List<Estate> estates;
 	private Date lastUpdate;
 	private Set<String> streets;
+	private int newEstatesCount;
+	private Date lastView;
 
 	public final List<Estate> getEstates() {
 		return this.estates;
@@ -39,5 +41,21 @@ public class WebResponse implements Serializable {
 
 	public final void setStreets(final Set<String> streets) {
 		this.streets = streets;
+	}
+
+	public final int getNewEstatesCount() {
+		return this.newEstatesCount;
+	}
+
+	public final void setNewEstatesCount(final int newEstatesCount) {
+		this.newEstatesCount = newEstatesCount;
+	}
+
+	public final Date getLastView() {
+		return this.lastView;
+	}
+
+	public final void setLastView(final Date lastView) {
+		this.lastView = lastView;
 	}
 }

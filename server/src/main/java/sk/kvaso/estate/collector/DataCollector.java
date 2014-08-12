@@ -61,110 +61,129 @@ public class DataCollector implements InitializingBean {
 
 	private Date lastScan;
 
-	public synchronized void collect(final boolean force) throws Throwable {
+	private boolean collecting = false;
+
+	public void collect(final boolean force) throws Throwable {
 		if (this.paused && !force) {
 			log.info("Collectting is paused");
 			return;
 		}
 
-		if (this.store.isEmpty()) {
-			log.info("Loading data from database");
-			//			this.databaseUtils.load();
-		} else {
-			log.info("Found in-memory data: " + this.store.size());
-		}
-
-		final boolean wasEmpty = this.store.isEmpty();
-		if (wasEmpty) {
-			log.info("Store is empty");
-		}
-
-		this.lastScan = new Date();
-
-		final List<Estate> detectedEstates = Collections.synchronizedList(new ArrayList<Estate>());
-		ThreadFactory threadFactory;
-		try {
-			threadFactory = ThreadManager.currentRequestThreadFactory();
-		} catch (final NullPointerException ex) {
-			threadFactory = new ThreadFactory() {
-
-				@Override
-				public Thread newThread(final Runnable r) {
-					return new Thread(r);
-				}
-			};
-		}
-		final List<Thread> threads = new ArrayList<>();
-
-		for (final ICollector collector : this.collectors) {
-			log.info("Using [" + collector.getName() + "]");
-			final Thread thread = threadFactory.newThread(new CollectRunnable(collector, wasEmpty, detectedEstates));
-			threads.add(thread);
-			thread.start();
-		}
-
-		boolean finished;
-		do {
-			log.info("Waiting for results");
-			Thread.sleep(5000);
-			finished = true;
-			for (final Thread thread : threads) {
-				if (thread.isAlive()) {
-					finished = false;
-					break;
-				}
+		if (this.collecting) {
+			while (this.collecting) {
+				Thread.sleep(1000);
 			}
-		} while (!finished);
+			return;
+		}
 
-		log.info("Cleaning results");
+		this.collecting = true;
 
-		this.store.setStreets(getStreets(this.store, detectedEstates));
+		try {
+			if (this.store.isEmpty()) {
+				log.info("Loading data from database");
+				this.databaseUtils.load();
+			} else {
+				log.info("Found in-memory data: " + this.store.size());
+			}
 
-		// guess street name out of title
-		for (final Estate e : detectedEstates) {
-			if (StringUtils.isEmpty(e.getSTREET()) || e.getSTREET().contains("okolie")
-					|| e.getSTREET().contains("Bratislava")) {
-				final String title = deAccent(fixStreetName(e.getTITLE())).toLowerCase();
-				for (final String street : this.store.getStreets()) {
-					final String s = deAccent(street).toLowerCase();
-					if (title.contains(s)) {
-						e.setSTREET(street);
+			final boolean wasEmpty = this.store.isEmpty();
+			if (wasEmpty) {
+				log.info("Store is empty");
+			}
+
+			this.lastScan = new Date();
+
+			final List<Estate> detectedEstates = Collections.synchronizedList(new ArrayList<Estate>());
+			ThreadFactory threadFactory;
+			try {
+				threadFactory = ThreadManager.currentRequestThreadFactory();
+			} catch (final NullPointerException ex) {
+				threadFactory = new ThreadFactory() {
+
+					@Override
+					public Thread newThread(final Runnable r) {
+						return new Thread(r);
+					}
+				};
+			}
+			final List<Thread> threads = new ArrayList<>();
+
+			for (final ICollector collector : this.collectors) {
+				log.info("Using [" + collector.getName() + "]");
+				final Thread thread = threadFactory
+						.newThread(new CollectRunnable(collector, wasEmpty, detectedEstates));
+				threads.add(thread);
+				thread.start();
+			}
+
+			boolean finished;
+			do {
+				log.info("Waiting for results");
+				Thread.sleep(5000);
+				finished = true;
+				for (final Thread thread : threads) {
+					if (thread.isAlive()) {
+						finished = false;
 						break;
 					}
 				}
-			}
-		}
+			} while (!finished);
 
-		try {
-			// replace street names with diacritics
+			log.info("Cleaning results");
+
+			this.store.setStreets(getStreets(this.store, detectedEstates));
+
+			// guess street name out of title
 			for (final Estate e : detectedEstates) {
-				final String str = deAccent(e.getSTREET());
-				for (final String street : this.store.getStreets()) {
-					if (str.equals(deAccent(street))) {
-						e.setSTREET(street);
-						break;
+				if (StringUtils.isEmpty(e.getSTREET()) || e.getSTREET().contains("okolie")
+						|| e.getSTREET().contains("Bratislava")) {
+					final String title = deAccent(fixStreetName(e.getTITLE())).toLowerCase();
+					for (final String street : this.store.getStreets()) {
+						String s = deAccent(street).toLowerCase();
+						if (e.getSTREET() != null && e.getSTREET().contains("Bratislava")) {
+							s = StringUtils.left(s, s.length() - 1);
+						}
+						if (title.contains(s)) {
+							e.setSTREET(street);
+							break;
+						}
 					}
 				}
 			}
-		} catch (final Throwable t) {
-			t.printStackTrace();
+
+			try {
+				// replace street names with diacritics
+				for (final Estate e : detectedEstates) {
+					final String str = deAccent(e.getSTREET());
+					for (final String street : this.store.getStreets()) {
+						if (str.equals(deAccent(street))) {
+							e.setSTREET(street);
+							break;
+						}
+					}
+				}
+			} catch (final Throwable t) {
+				t.printStackTrace();
+			}
+
+			this.store.setStreets(getStreets(this.store, detectedEstates));
+
+			log.info("Detected " + detectedEstates.size() + " estates");
+
+			final Map<String, String> newEstatesCount = mergeEstates(this.store, detectedEstates, true);
+
+			log.info("Total " + this.store.size() + " estates");
+
+			//		this.databaseUtils.save();
+
+			if (!wasEmpty && newEstatesCount.size() > 0) {
+				sendMail(newEstatesCount);
+			}
+
+			log.info("done");
+		} finally {
+			this.collecting = false;
 		}
-
-		this.store.setStreets(getStreets(this.store, detectedEstates));
-
-		log.info("Detected " + detectedEstates.size() + " estates");
-
-		final Map<String, String> newEstatesCount = mergeEstates(this.store, detectedEstates, true);
-
-		log.info("Total " + this.store.size() + " estates");
-
-		//		this.databaseUtils.save();
-
-		if (!wasEmpty && newEstatesCount.size() > 0) {
-			sendMail(newEstatesCount);
-		}
-
-		log.info("done");
 	}
 
 	private Map<String, String> mergeEstates(final Collection<Estate> allEstates, final Collection<Estate> newEstates,
@@ -205,8 +224,8 @@ public class DataCollector implements InitializingBean {
 				if (e1.getSTREET().equalsIgnoreCase(e2.getSTREET())) {
 					return true;
 				}
-			} else if (!StringUtils.isEmpty(e1.getTEXT()) && !StringUtils.isEmpty(e2.getTEXT())) {
-				if (StringUtils.getJaroWinklerDistance(e1.getTEXT(), e2.getTEXT()) > 0.8) {
+			} else if (!StringUtils.isEmpty(e1.getSHORT_TEXT()) && !StringUtils.isEmpty(e2.getSHORT_TEXT())) {
+				if (StringUtils.getJaroWinklerDistance(e1.getSHORT_TEXT(), e2.getSHORT_TEXT()) > 0.8) {
 					return true;
 				}
 			}
@@ -301,7 +320,7 @@ public class DataCollector implements InitializingBean {
 	public void afterPropertiesSet() throws Exception {
 		try {
 			QueueFactory.getDefaultQueue().add(
-					TaskOptions.Builder.withUrl("/rest/collectCron").countdownMillis(TimeUnit.MINUTES.toMillis(1)));
+					TaskOptions.Builder.withUrl("/rest/collectCron").countdownMillis(TimeUnit.SECONDS.toMillis(10)));
 		} catch (final NullPointerException ex) {
 
 		}
