@@ -13,10 +13,11 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
+import sk.kvaso.estate.collector.AbstractCollector;
 import sk.kvaso.estate.db.Estate;
 
 @Component
-public class ZoznamRealitCollectorImpl implements ICollector {
+public class ZoznamRealitCollectorImpl extends AbstractCollector {
 	private static final Logger log = Logger.getLogger(NehnutelnostiCollectorImpl.class.getName());
 
 	@Override
@@ -35,7 +36,7 @@ public class ZoznamRealitCollectorImpl implements ICollector {
 	}
 
 	@Override
-	public Set<Estate> parse(final Document doc, final Date date) throws Exception {
+	public Set<Estate> parse(final Document doc, final Date date, final int page) throws Exception {
 		final Set<Estate> result = new HashSet<>();
 
 		final Elements inzeratElements = doc.getElementsByClass("re");
@@ -43,7 +44,7 @@ public class ZoznamRealitCollectorImpl implements ICollector {
 			final Estate estate = new Estate();
 
 			final Element elementA = inzerat.getElementsByTag("a").first();
-			estate.setURL("http://www.zoznamrealit.sk" + elementA.attr("href"));
+			estate.getURLs().add(setFirstUrl("http://www.zoznamrealit.sk" + elementA.attr("href"), page));
 			final Element elementA2 = inzerat.getElementsByTag("h2").first().child(0);
 			estate.setTITLE(elementA2.ownText());
 
@@ -51,8 +52,6 @@ public class ZoznamRealitCollectorImpl implements ICollector {
 			if (estate.getPRICE() == null) {
 				continue;
 			}
-
-			log.fine(estate.getTITLE());
 
 			estate.setSHORT_TEXT(elementA2.attr("title"));
 
@@ -98,5 +97,10 @@ public class ZoznamRealitCollectorImpl implements ICollector {
 		} catch (final Exception ex) {
 		}
 		return null;
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return log;
 	}
 }

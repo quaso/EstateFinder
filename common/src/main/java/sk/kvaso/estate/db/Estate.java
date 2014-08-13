@@ -10,6 +10,8 @@ public class Estate extends Data {
 	 */
 	private static final long serialVersionUID = -6798875380525236717L;
 
+	private boolean VISIBLE;
+
 	private String STREET;
 
 	private int AREA;
@@ -24,7 +26,7 @@ public class Estate extends Data {
 
 	private String TEXT;
 
-	private String URL;
+	private final Set<String> URLs = new HashSet<>();
 
 	private String THUMBNAIL;
 
@@ -33,6 +35,15 @@ public class Estate extends Data {
 	private final Set<Picture> PICTURES = new HashSet<>();
 
 	private Date TIMESTAMP;
+
+	public final boolean isVISIBLE() {
+		return this.VISIBLE;
+	}
+
+	public final void setVISIBLE(final boolean vISIBLE) {
+		this.VISIBLE = vISIBLE;
+		this.setDirty(true);
+	}
 
 	public final String getSTREET() {
 		return this.STREET;
@@ -72,6 +83,9 @@ public class Estate extends Data {
 
 	public final void setSHORT_TEXT(final String sHORT_TEXT) {
 		this.SHORT_TEXT = sHORT_TEXT;
+		if (this.SHORT_TEXT != null && this.SHORT_TEXT.length() >= 500) {
+			this.SHORT_TEXT = this.SHORT_TEXT.substring(0, 500);
+		}
 	}
 
 	public final Set<String> getNOTES() {
@@ -86,12 +100,8 @@ public class Estate extends Data {
 		this.TEXT = tEXT;
 	}
 
-	public final String getURL() {
-		return this.URL;
-	}
-
-	public final void setURL(final String uRL) {
-		this.URL = uRL;
+	public final Set<String> getURLs() {
+		return this.URLs;
 	}
 
 	public final String getTHUMBNAIL() {

@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 import sk.kvaso.estate.EstateStore;
 import sk.kvaso.estate.collector.DataCollector;
+import sk.kvaso.estate.db.AppState;
 import sk.kvaso.estate.db.DatabaseUtils;
 import sk.kvaso.estate.db.Estate;
 
@@ -39,7 +41,8 @@ public class EstateController {
 	@Autowired
 	private DatabaseUtils databaseUtils;
 
-	private Date lastView = null;
+	@Autowired
+	private AppState appState;
 
 	private void setCORSHeaders(final HttpServletResponse response) {
 		response.setHeader("Access-Control-Allow-Origin", "*");
@@ -67,6 +70,8 @@ public class EstateController {
 			splittedStreets = streets.split(",");
 		}
 
+		this.databaseUtils.loadAppState(this.appState);
+
 		result.setNewEstatesCount(0);
 
 		result.setEstates(new ArrayList<Estate>());
@@ -87,7 +92,7 @@ public class EstateController {
 				}
 				if (add) {
 					result.getEstates().add(e);
-					if (this.lastView == null || e.getTIMESTAMP().after(this.lastView)) {
+					if (this.appState.getLastView() == null || e.getTIMESTAMP().after(this.appState.getLastView())) {
 						result.setNewEstatesCount(result.getNewEstatesCount() + 1);
 					}
 				}
@@ -98,41 +103,44 @@ public class EstateController {
 
 			@Override
 			public int compare(final Estate e1, final Estate e2) {
+				final Date lastView = EstateController.this.appState.getLastView();
 				int result;
-				if (EstateController.this.lastView != null && EstateController.this.lastView.before(e1.getTIMESTAMP())
-						&& EstateController.this.lastView.after(e2.getTIMESTAMP())) {
+				if (EstateController.this.store != null && lastView != null && lastView.before(e1.getTIMESTAMP())
+						&& lastView.after(e2.getTIMESTAMP())) {
 					return -1;
-				} else if (EstateController.this.lastView != null
-						&& EstateController.this.lastView.after(e1.getTIMESTAMP())
-						&& EstateController.this.lastView.before(e2.getTIMESTAMP())) {
+				} else if (lastView != null
+						&& lastView.after(e1.getTIMESTAMP())
+						&& lastView.before(e2.getTIMESTAMP())) {
 					return 1;
 				} else {
 					final String s1 = (e1.getSTREET() != null) ? e1.getSTREET() : "";
 					final String s2 = (e2.getSTREET() != null) ? e2.getSTREET() : "";
 					result = s1.compareTo(s2);
 					if (result == 0) {
-						result = e1.getURL().compareTo(e2.getURL());
+						result = Integer.compare(e1.getAREA(), e2.getAREA());
 					}
 				}
 				return result;
 			}
 		});
 
-		result.setLastView(this.lastView);
+		result.setLastView(this.appState.getLastView());
 
-		this.lastView = new Date();
+		this.appState.setLastView(new Date());
 
-		result.setLastUpdate(this.collector.getLastScan());
+		this.databaseUtils.saveAppState(this.appState);
+
+		result.setLastUpdate(this.appState.getLastScan());
 		result.setStreets(this.store.getStreets());
 		return result;
 	}
 
-	@RequestMapping(value = "/hide/{id}", method = RequestMethod.GET)
+	@RequestMapping(value = "/hide/{ids}", method = RequestMethod.GET)
 	@ResponseStatus(value = HttpStatus.OK)
-	public void deleteEstate(final HttpServletResponse response, @PathVariable("id") final int estateId) {
+	public void hideEstates(final HttpServletResponse response, @PathVariable("ids") final long[] estateIds) {
 		setCORSHeaders(response);
 		for (final Estate e : this.store) {
-			if (estateId == e.getID()) {
+			if (ArrayUtils.contains(estateIds, e.getID())) {
 				e.setVISIBLE(false);
 			}
 		}
@@ -141,8 +149,9 @@ public class EstateController {
 	@RequestMapping(value = "/save", method = RequestMethod.GET)
 	public ResponseEntity<String> save(final HttpServletResponse response) {
 		try {
-			this.databaseUtils.save();
+			this.databaseUtils.saveEstates(this.store);
 		} catch (final Exception ex) {
+			log.severe(DatabaseUtils.printStackTrace(ex));
 			return new ResponseEntity<String>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 		return new ResponseEntity<String>(HttpStatus.OK);
@@ -152,7 +161,15 @@ public class EstateController {
 	@ResponseStatus(value = HttpStatus.OK)
 	public void deleteAll(final HttpServletResponse response) {
 		setCORSHeaders(response);
-		this.databaseUtils.deleteAll();
+		this.databaseUtils.deleteAllEstates(this.store);
+		this.databaseUtils.clearAppState(this.appState);
+	}
+
+	@RequestMapping(value = "/prepareRecollect", method = RequestMethod.GET)
+	@ResponseStatus(value = HttpStatus.OK)
+	public void clearState(final HttpServletResponse response) {
+		setCORSHeaders(response);
+		this.databaseUtils.clearAppState(this.appState);
 	}
 
 	@RequestMapping(value = "/count", method = RequestMethod.GET)

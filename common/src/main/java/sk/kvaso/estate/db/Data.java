@@ -9,11 +9,15 @@ public abstract class Data implements Serializable {
 
 	private long ID;
 
-	private boolean VISIBLE;
+	private boolean persisted = false;
 
-	private boolean persisted;
+	private boolean dirty = true;
 
-	private Entity google_entity;
+	private Entity google_entity = null;
+
+	String getDatabaseName() {
+		return this.getClass().getSimpleName();
+	}
 
 	public final long getID() {
 		return this.ID;
@@ -23,20 +27,20 @@ public abstract class Data implements Serializable {
 		this.ID = iD;
 	}
 
-	public final boolean isVISIBLE() {
-		return this.VISIBLE;
-	}
-
-	public final void setVISIBLE(final boolean vISIBLE) {
-		this.VISIBLE = vISIBLE;
-	}
-
-	final boolean isPersisted() {
+	public final boolean isPersisted() {
 		return this.persisted;
 	}
 
 	final void setPersisted(final boolean persisted) {
 		this.persisted = persisted;
+	}
+
+	public final boolean isDirty() {
+		return this.dirty;
+	}
+
+	final void setDirty(final boolean dirty) {
+		this.dirty = dirty;
 	}
 
 	final Entity getGoogle_entity() {

@@ -45,8 +45,8 @@
 			$("#searchStreet").select2({
 				closeOnSelect : false
 			});
-			$('#totalBadge').tooltip();
 			$('#newBadge').tooltip();
+
 		});
 	</script>
 
@@ -74,14 +74,19 @@
 				</form>
 				<ul class="nav navbar-nav navbar-right">
 					<li class="dropdown"><a href="#" class="dropdown-toggle"
-						data-toggle="dropdown">Database <span class="caret"></span></a>
+						data-toggle="dropdown">Utils <span class="caret"></span></a>
 						<ul class="dropdown-menu" role="menu">
 							<li><a ng-click="save()">Save</a></li>
 							<li><a ng-click="deleteAll()">Clear</a></li>
+							<li><a ng-click="prepareRecollect()">Prepare recollect</a></li>
+							<li><a ng-click="hideAllUnknownEstates()">Hide all empty streets</a></li>
 						</ul></li>
 					<li><a>Total:
-							<div id="totalBadge" class="badge" data-toggle="tooltip" data-placement="bottom" title="Last visit {{lastView | nullDate:'dd.MMMM HH:mm'}}">{{estates.length}}</div>
-							<div id="newBadge" class="badge badge-new" ng-show="newEstatesCount>0" data-toggle="tooltip" data-placement="bottom" title="New estatets since last visit">{{newEstatesCount}}</div>
+							<div id="totalBadge" class="badge"
+								title="Last visit {{lastView | nullDate:'dd.MMMM HH:mm'}}">{{allEstates.length}}</div>
+							<div id="newBadge" class="badge badge-new"
+								ng-show="newEstatesCount>0" data-toggle="tooltip"
+								data-placement="bottom" title="New estatets since last visit">{{newEstatesCount}}</div>
 					</a></li>
 					<li><a>Updated: {{lastUpdate | nullDate:'dd.MMM HH:mm'}}</a></li>
 				</ul>
@@ -90,18 +95,20 @@
 	</div>
 
 	<div class="container-fluid">
-		<div class="row main show-hide" ng-repeat="estate in estates"
+		<div class="row main show-hide" ng-repeat="estate in filteredEstates"
 			ng-show="estate.visible">
-
 			<div class="col-sm-offset-2 col-sm-8">
-				<a href="{{estate.url}}" class="col-sm-3" target="_blank"> <img
-					alt="{{estate.title}}" ng-src="{{estate.thumbnail}}" />
-				</a>
+				<div class="col-sm-3">
+					<a href="{{estate.url}}" target="_blank"> <img
+						alt="{{estate.title}}" ng-src="{{estate.thumbnail}}" />
+					</a>
+				</div>
 
-				<div class="container-fluid col-sm-7">
+				<div class="container col-sm-7">
 					<div class="row">
 						<h4 class="col-sm-12 title">
-							<a href="{{estate.url}}" target="_blank" title="{{estate.id}}">{{estate.title}}</a>
+							<a href="{{estate.urls[0]}}" target="_blank"
+								title="Peristed: {{estate.persisted}}, dirty: {{estate.dirty}}, id: {{estate.id}}">{{estate.title}}</a>
 						</h4>
 					</div>
 					<div class="row">

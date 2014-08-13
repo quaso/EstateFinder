@@ -13,10 +13,11 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
+import sk.kvaso.estate.collector.AbstractCollector;
 import sk.kvaso.estate.db.Estate;
 
 @Component
-public class RealitySmeCollectorImpl implements ICollector {
+public class RealitySmeCollectorImpl extends AbstractCollector {
 	private static final Logger log = Logger.getLogger(RealitySmeCollectorImpl.class.getName());
 
 	@Override
@@ -32,7 +33,7 @@ public class RealitySmeCollectorImpl implements ICollector {
 	}
 
 	@Override
-	public Set<Estate> parse(final Document doc, final Date date) throws Exception {
+	public Set<Estate> parse(final Document doc, final Date date, final int page) throws Exception {
 		if (doc.html().contains("sledky."))
 		{
 			return null;
@@ -45,7 +46,7 @@ public class RealitySmeCollectorImpl implements ICollector {
 			final Estate estate = new Estate();
 
 			final Element elementA = inzerat.getElementsByTag("a").first();
-			estate.setURL("http://reality.sme.sk" + elementA.attr("href"));
+			estate.getURLs().add(setFirstUrl("http://reality.sme.sk" + elementA.attr("href"), page));
 			estate.setTITLE(elementA.attr("title"));
 			final Element status = elementA.getElementsByClass("estate-status").first();
 			if (status != null) {
@@ -53,8 +54,6 @@ public class RealitySmeCollectorImpl implements ICollector {
 					continue;
 				}
 			}
-
-			log.fine(estate.getTITLE());
 
 			estate.setTHUMBNAIL(elementA.getElementsByTag("img").first().attr("src"));
 
@@ -101,5 +100,10 @@ public class RealitySmeCollectorImpl implements ICollector {
 
 	private String getPrice(final String str) {
 		return str.substring(0, str.lastIndexOf(" "));
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return log;
 	}
 }

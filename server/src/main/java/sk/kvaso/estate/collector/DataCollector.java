@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -31,9 +32,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
 import sk.kvaso.estate.EstateStore;
-import sk.kvaso.estate.collector.impl.ICollector;
+import sk.kvaso.estate.db.AppState;
 import sk.kvaso.estate.db.DatabaseUtils;
 import sk.kvaso.estate.db.Estate;
+import sk.kvaso.estate.exception.NoChangesException;
 
 import com.google.appengine.api.ThreadManager;
 import com.google.appengine.api.taskqueue.QueueFactory;
@@ -52,14 +54,20 @@ public class DataCollector implements InitializingBean {
 	@Autowired
 	private DatabaseUtils databaseUtils;
 
+	@Autowired
+	private AppState appState;
+
 	private boolean paused = false;
+
+	/**
+	 * 1 = first collect, 2 = second collect, 3 = any other collect
+	 */
+	private int collectingState = 0;
 
 	@Autowired
 	public DataCollector(final Set<ICollector> collectors) {
 		this.collectors = collectors;
 	}
-
-	private Date lastScan;
 
 	private boolean collecting = false;
 
@@ -77,11 +85,16 @@ public class DataCollector implements InitializingBean {
 		}
 
 		this.collecting = true;
+		if (this.collectingState < 2) {
+			this.collectingState++;
+		}
+
+		this.databaseUtils.loadAppState(this.appState);
 
 		try {
 			if (this.store.isEmpty()) {
 				log.info("Loading data from database");
-				this.databaseUtils.load();
+				this.databaseUtils.loadEstates(this.store);
 			} else {
 				log.info("Found in-memory data: " + this.store.size());
 			}
@@ -91,7 +104,7 @@ public class DataCollector implements InitializingBean {
 				log.info("Store is empty");
 			}
 
-			this.lastScan = new Date();
+			this.appState.setLastScan(new Date());
 
 			final List<Estate> detectedEstates = Collections.synchronizedList(new ArrayList<Estate>());
 			ThreadFactory threadFactory;
@@ -106,34 +119,20 @@ public class DataCollector implements InitializingBean {
 					}
 				};
 			}
-			final List<Thread> threads = new ArrayList<>();
+			final CountDownLatch latch = new CountDownLatch(this.collectors.size());
 
 			for (final ICollector collector : this.collectors) {
 				log.info("Using [" + collector.getName() + "]");
-				final Thread thread = threadFactory
-						.newThread(new CollectRunnable(collector, wasEmpty, detectedEstates));
-				threads.add(thread);
+				final Thread thread = threadFactory.newThread(new CollectRunnable(collector, detectedEstates, latch));
 				thread.start();
 			}
 
-			boolean finished;
-			do {
-				log.info("Waiting for results");
-				Thread.sleep(5000);
-				finished = true;
-				for (final Thread thread : threads) {
-					if (thread.isAlive()) {
-						finished = false;
-						break;
-					}
-				}
-			} while (!finished);
-
+			latch.await();
 			log.info("Cleaning results");
 
 			this.store.setStreets(getStreets(this.store, detectedEstates));
 
-			// guess street name out of title
+			// guess street name out of title or notes
 			for (final Estate e : detectedEstates) {
 				if (StringUtils.isEmpty(e.getSTREET()) || e.getSTREET().contains("okolie")
 						|| e.getSTREET().contains("Bratislava")) {
@@ -146,6 +145,21 @@ public class DataCollector implements InitializingBean {
 						if (title.contains(s)) {
 							e.setSTREET(street);
 							break;
+						} else {
+							if (!e.getNOTES().isEmpty()) {
+								for (final String note : e.getNOTES()) {
+									if (deAccent(note).toLowerCase().contains(s)) {
+										e.setSTREET(street);
+										break;
+									}
+								}
+							} else {
+								if (!StringUtils.isEmpty(e.getSHORT_TEXT())
+										&& deAccent(e.getSHORT_TEXT()).toLowerCase().contains(s)) {
+									e.setSTREET(street);
+									break;
+								}
+							}
 						}
 					}
 				}
@@ -170,13 +184,14 @@ public class DataCollector implements InitializingBean {
 
 			log.info("Detected " + detectedEstates.size() + " estates");
 
-			final Map<String, String> newEstatesCount = mergeEstates(this.store, detectedEstates, true);
+			final Map<String, Estate> newEstatesCount = mergeEstates(this.store, detectedEstates, true);
 
 			log.info("Total " + this.store.size() + " estates");
 
-			//		this.databaseUtils.save();
+			this.databaseUtils.saveEstates(this.store);
+			this.databaseUtils.saveAppState(this.appState);
 
-			if (!wasEmpty && newEstatesCount.size() > 0) {
+			if (!wasEmpty && newEstatesCount.size() > 0 && this.collectingState == 2) {
 				sendMail(newEstatesCount);
 			}
 
@@ -186,9 +201,9 @@ public class DataCollector implements InitializingBean {
 		}
 	}
 
-	private Map<String, String> mergeEstates(final Collection<Estate> allEstates, final Collection<Estate> newEstates,
-			final boolean setId) {
-		final Map<String, String> result = new HashMap<>();
+	private synchronized Map<String, Estate> mergeEstates(final Collection<Estate> allEstates,
+			final Collection<Estate> newEstates, final boolean setId) {
+		final Map<String, Estate> result = new HashMap<>();
 
 		for (final Estate newEstate : newEstates) {
 			boolean isSame = false;
@@ -198,12 +213,13 @@ public class DataCollector implements InitializingBean {
 					if (estate.getTHUMBNAIL() == null) {
 						estate.setTHUMBNAIL(newEstate.getTHUMBNAIL());
 					}
+					estate.getURLs().addAll(newEstate.getURLs());
 					break;
 				}
 			}
 			if (!isSame) {
-				log.info("New found: " + newEstate.getURL());
-				result.put(newEstate.getTITLE(), newEstate.getURL());
+				//				log.info("New found: " + newEstate.getTITLE());
+				result.put(newEstate.getTITLE(), newEstate);
 				if (setId) {
 					newEstate.setID(allEstates.size() + 1);
 				}
@@ -216,9 +232,10 @@ public class DataCollector implements InitializingBean {
 	}
 
 	public boolean isTheSame(final Estate e1, final Estate e2) {
-		if (e1.getURL().equals(e2.getURL())) {
+		if (CollectionUtils.containsAny(e1.getURLs(), e2.getURLs())) {
 			return true;
 		}
+
 		if (e1.getAREA() == e2.getAREA()) {
 			if (!StringUtils.isEmpty(e1.getSTREET()) && !StringUtils.isEmpty(e2.getSTREET())) {
 				if (e1.getSTREET().equalsIgnoreCase(e2.getSTREET())) {
@@ -287,7 +304,7 @@ public class DataCollector implements InitializingBean {
 		return DIACRITIC_PATTERN.matcher(nfdNormalizedString).replaceAll("");
 	}
 
-	private void sendMail(final Map<String, String> newEstates) {
+	private void sendMail(final Map<String, Estate> newEstates) {
 		final Properties props = new Properties();
 		final Session session = Session.getDefaultInstance(props, null);
 
@@ -300,10 +317,10 @@ public class DataCollector implements InitializingBean {
 							"Martin Kvasnicka"));
 			msg.setSubject("New estates found: " + newEstates.size());
 			final StringBuffer buff = new StringBuffer();
-			for (final Entry<String, String> e : newEstates.entrySet()) {
+			for (final Entry<String, Estate> e : newEstates.entrySet()) {
 				buff.append(e.getKey());
 				buff.append("\n");
-				buff.append(e.getValue());
+				buff.append(e.getValue().getURLs().iterator().next());
 				buff.append("\n");
 				buff.append("-------------------------\n\n");
 			}
@@ -326,10 +343,6 @@ public class DataCollector implements InitializingBean {
 		}
 	}
 
-	public final Date getLastScan() {
-		return this.lastScan;
-	}
-
 	public final boolean isPaused() {
 		return this.paused;
 	}
@@ -341,33 +354,38 @@ public class DataCollector implements InitializingBean {
 	private class CollectRunnable implements Runnable {
 
 		private final ICollector collector;
-		private final boolean wasEmpty;
 		private final List<Estate> detectedEstates;
+		private final CountDownLatch latch;
 
-		public CollectRunnable(final ICollector collector, final boolean wasEmpty, final List<Estate> detectedEstates) {
+		public CollectRunnable(final ICollector collector, final List<Estate> detectedEstates,
+				final CountDownLatch latch) {
 			this.collector = collector;
-			this.wasEmpty = wasEmpty;
 			this.detectedEstates = detectedEstates;
+			this.latch = latch;
 		}
 
 		@Override
 		public void run() {
 			try {
+				this.collector.init();
 				for (int page = 1;; page++) {
-					if (!this.wasEmpty && page > 2) {
-						break;
-					}
-					log.info("---- page " + page + " ----");
 					final Document doc = Jsoup.parse(this.collector.getURL(page), 10000);
-					final Set<Estate> estatesInPage = this.collector.parse(doc, DataCollector.this.lastScan);
+					final Set<Estate> estatesInPage = this.collector.parse(doc,
+							DataCollector.this.appState.getLastScan(), page);
 					if (CollectionUtils.isEmpty(estatesInPage)) {
 						break;
 					}
+					log.fine("[" + this.collector.getName() + "] found " + estatesInPage.size() + " estates at page "
+							+ page);
 					mergeEstates(this.detectedEstates, estatesInPage, false);
 				}
-			} catch (final Exception e) {
-				e.printStackTrace();
+			} catch (final NoChangesException ex) {
+				log.info("[" + ex.getCollectorName() + "] does not contain any changes since last parsing");
+			} catch (final Exception ex) {
+				log.severe("Error collecting data for " + this.collector.getName() + ": "
+						+ DatabaseUtils.printStackTrace(ex));
 			}
+			this.latch.countDown();
 		}
 	}
 }

@@ -13,10 +13,11 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
+import sk.kvaso.estate.collector.AbstractCollector;
 import sk.kvaso.estate.db.Estate;
 
 @Component
-public class RealityBazarCollectorImpl implements ICollector {
+public class RealityBazarCollectorImpl extends AbstractCollector {
 	private static final Logger log = Logger.getLogger(RealityBazarCollectorImpl.class.getName());
 
 	@Override
@@ -31,7 +32,7 @@ public class RealityBazarCollectorImpl implements ICollector {
 	}
 
 	@Override
-	public Set<Estate> parse(final Document doc, final Date date) throws Exception {
+	public Set<Estate> parse(final Document doc, final Date date, final int page) throws Exception {
 		final Set<Estate> result = new HashSet<>();
 
 		final Elements inzeratElements = doc.getElementsByClass("span35");
@@ -40,10 +41,8 @@ public class RealityBazarCollectorImpl implements ICollector {
 
 			final Element elementHeader = inzerat.getElementsByTag("header").first();
 			final Element elementA = elementHeader.getElementsByTag("a").first();
-			estate.setURL(elementA.attr("href"));
+			estate.getURLs().add(setFirstUrl(elementA.attr("href"), page));
 			estate.setTITLE(elementA.ownText());
-
-			log.fine(estate.getTITLE());
 
 			estate.setTHUMBNAIL(inzerat.getElementsByClass("photo-img4").first().getElementsByTag("img").first()
 					.attr("data-src"));
@@ -94,5 +93,10 @@ public class RealityBazarCollectorImpl implements ICollector {
 
 	private String getPrice(final String str) {
 		return str.substring(0, str.lastIndexOf(" "));
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return log;
 	}
 }

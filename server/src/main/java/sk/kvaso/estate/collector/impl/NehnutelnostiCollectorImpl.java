@@ -13,10 +13,11 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
+import sk.kvaso.estate.collector.AbstractCollector;
 import sk.kvaso.estate.db.Estate;
 
 @Component
-public class NehnutelnostiCollectorImpl implements ICollector {
+public class NehnutelnostiCollectorImpl extends AbstractCollector {
 	private static final Logger log = Logger.getLogger(ZoznamRealitCollectorImpl.class.getName());
 
 	@Override
@@ -34,7 +35,7 @@ public class NehnutelnostiCollectorImpl implements ICollector {
 	}
 
 	@Override
-	public Set<Estate> parse(final Document doc, final Date date) throws Exception {
+	public Set<Estate> parse(final Document doc, final Date date, final int page) throws Exception {
 		final Set<Estate> result = new HashSet<>();
 
 		final Elements inzeratElements = doc.getElementsByClass("inzerat");
@@ -43,10 +44,8 @@ public class NehnutelnostiCollectorImpl implements ICollector {
 
 			final Element elementA = inzerat.getElementsByClass("advertisement-head").first().getElementsByTag("a")
 					.first();
-			estate.setURL(elementA.attr("href"));
+			estate.getURLs().add(setFirstUrl(elementA.attr("href"), page));
 			estate.setTITLE(elementA.ownText());
-
-			log.fine(estate.getTITLE());
 
 			estate.setTHUMBNAIL(inzerat.getElementsByClass("advertPhoto").first().getElementsByTag("img").first()
 					.attr("data-src"));
@@ -64,7 +63,6 @@ public class NehnutelnostiCollectorImpl implements ICollector {
 
 			result.add(estate);
 		}
-
 		return result;
 	}
 
@@ -72,7 +70,7 @@ public class NehnutelnostiCollectorImpl implements ICollector {
 		String result = "";
 		final int i = str.indexOf(",");
 		if (i > 0) {
-			result = str.substring(0, i).replaceAll("(Ružinov)", "").replaceAll("Ružinov", "").trim();
+			result = str.substring(0, i).replaceAll("\\(Ružinov\\)", "").replaceAll("Ružinov\\b", "").trim();
 			result = StringUtils.substringBefore(result, "(").trim();
 		}
 		return result;
@@ -84,5 +82,10 @@ public class NehnutelnostiCollectorImpl implements ICollector {
 
 	private String getPrice(final String str) {
 		return str.substring(0, str.lastIndexOf(" "));
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return log;
 	}
 }

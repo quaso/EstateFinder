@@ -1,0 +1,1 @@
+c:\sandbox\workspaces\EstateFinder\server\src\main\webapp>c:\Programme\appengine-java-sdk-1.9.8\bin\appcfg.cmd --no_cookies -p localhost:3128 --email=martinkvasnicka@gmail.com --passin rollback ./

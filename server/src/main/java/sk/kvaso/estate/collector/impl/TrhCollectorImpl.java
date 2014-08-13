@@ -13,10 +13,11 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
+import sk.kvaso.estate.collector.AbstractCollector;
 import sk.kvaso.estate.db.Estate;
 
 @Component
-public class TrhCollectorImpl implements ICollector {
+public class TrhCollectorImpl extends AbstractCollector {
 	private static final Logger log = Logger.getLogger(TrhCollectorImpl.class.getName());
 
 	@Override
@@ -32,7 +33,7 @@ public class TrhCollectorImpl implements ICollector {
 	}
 
 	@Override
-	public Set<Estate> parse(final Document doc, final Date date) throws Exception {
+	public Set<Estate> parse(final Document doc, final Date date, final int page) throws Exception {
 		final Set<Estate> result = new HashSet<>();
 
 		final Elements inzeratElements = doc.getElementsByClass("advert");
@@ -41,13 +42,12 @@ public class TrhCollectorImpl implements ICollector {
 
 			final Element elementA = inzerat.getElementsByClass("description").first().getElementsByTag("a")
 					.first();
-			estate.setURL(elementA.attr("href"));
-			if (estate.getURL().startsWith("/")) {
-				estate.setURL("http://www.trh.sk" + estate.getURL());
+			String url = elementA.attr("href");
+			if (url.startsWith("/")) {
+				url = "http://www.trh.sk" + url;
 			}
+			estate.getURLs().add(setFirstUrl(url, page));
 			estate.setTITLE(elementA.ownText());
-
-			log.fine(estate.getTITLE());
 
 			estate.setTHUMBNAIL(inzerat.getElementsByClass("image").first().getElementsByTag("img").first().attr("src"));
 
@@ -99,5 +99,10 @@ public class TrhCollectorImpl implements ICollector {
 		} catch (final NumberFormatException ex) {
 			return -1;
 		}
+	}
+
+	@Override
+	protected Logger getLogger() {
+		return log;
 	}
 }
