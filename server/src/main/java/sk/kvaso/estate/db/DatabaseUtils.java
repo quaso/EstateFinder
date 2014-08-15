@@ -89,8 +89,11 @@ public class DatabaseUtils {
 
 			int loadedCount = 0;
 			for (final Entity e : loaded) {
-				store.add(load(e, new Estate(), false));
-				loadedCount++;
+				final Estate estate = load(e, new Estate(), false);
+				if (estate.getAREA() > 0) {
+					store.add(estate);
+					loadedCount++;
+				}
 			}
 			log.info("Data loaded: " + loadedCount);
 		} catch (final OverQuotaException ex) {

@@ -206,6 +206,9 @@ public class DataCollector implements InitializingBean {
 		final Map<String, Estate> result = new HashMap<>();
 
 		for (final Estate newEstate : newEstates) {
+			if (newEstate.getAREA() <= 0) {
+				continue;
+			}
 			boolean isSame = false;
 			for (final Estate estate : allEstates) {
 				if (isTheSame(estate, newEstate)) {
